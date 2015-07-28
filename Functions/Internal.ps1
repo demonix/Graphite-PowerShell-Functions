@@ -185,6 +185,7 @@ function SendMetrics
             {
                 PSUsing ($udpobject = new-Object system.Net.Sockets.Udpclient($CarbonServer, $CarbonServerPort)) -ScriptBlock {
                     $enc = new-object system.text.asciiencoding
+                    $Message = ""
                     foreach ($metricString in $Metrics)
                     {
                         $Message += "$($metricString)`r"
