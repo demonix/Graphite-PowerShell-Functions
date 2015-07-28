@@ -147,7 +147,15 @@ function PSUsing
     {
         if ($inputObject -ne $null)
         {
-            if ($inputObject.psbase -eq $null)
+            if ($inputObject.GetType().FullName -eq "System.Net.Sockets.TcpClient")
+            {
+                $inputObject.Close()
+            }
+            elseif ($inputObject.GetType().FullName -eq "System.Net.Sockets.UdpClient")
+            {
+                $inputObject.Close()
+            }
+            elseif ($inputObject.psbase -eq $null)
             {
                 $inputObject.Dispose()
             }
