@@ -78,21 +78,8 @@ Function ConvertTo-GraphiteMetric
         
         ForEach ($m in $MetricReplacementHash.GetEnumerator())
         {
-            If ($m.Value -cmatch '#{CAPTUREGROUP}')
-            {
-                # Stores the matching regex into $Matches
-                $cleanNameOfSample -match $m.Name | Out-Null
-
-                # Replaces the string the user provided - this #{CAPTUREGROUP} to $Matches[1]
-                $replacementString = $m.Value -replace '#{CAPTUREGROUP}', $Matches[1]
-
-                $cleanNameOfSample = $cleanNameOfSample -replace $m.Name, $replacementString
-            }
-            else
-            {
-                Write-Verbose "Replacing: $($m.Name) With : $($m.Value)"
-                $cleanNameOfSample = $cleanNameOfSample -replace $m.Name, $m.Value
-            }
+             Write-Verbose "Replacing: $($m.Name) With : $($m.Value)"
+             $cleanNameOfSample = $cleanNameOfSample -replace $m.Name, $m.Value
         }
     }
     else
