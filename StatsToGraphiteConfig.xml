@@ -27,6 +27,11 @@
 	<MetricCleaning>
 		<!-- These will be found and replaced in the order they appear here -->
 		<MetricReplace This="physicaldisk\(.* (.*)\:\)" With="physicaldisk.$1-drive"/>
+		<MetricReplace This="logicaldisk\(.* (.*)\:\)" With="logicaldisk.$1-drive"/>
+		<MetricReplace This="Network Interface\(([^\)]*)(?&lt;! _\d+)\)" With="Network Interface($1 _0)"/>
+		<MetricReplace This="Network Interface\((.*?) (?:_(\d+)|)\)" With="Network Interface($1-$2)"/>
+		<MetricReplace This="Network Interface\((intel)(?:\[r\]|)(.*?)\)" With="Network Interface($1.$2)"/>
+		<MetricReplace This="Network Interface\((microsoft)(.*?)\)" With="Network Interface($1.$2)"/>
 		<MetricReplace This="^\\\\" With=""/>
 		<MetricReplace This="\\\\" With=""/>
 		<MetricReplace This="\/" With="-"/>
@@ -45,8 +50,7 @@
 		<MetricReplace This="\.cpu\.total\.processortime" With=".cpu.usage"/>
 		<MetricReplace This="\.networkinterface\." With=".nic."/>
 		<MetricReplace This="\.physicaldisk\." With=".hdd."/>
-		<MetricReplace This="\.intel[a-zA-Z0-9]+\." With=".intel."/>
-		<MetricReplace This="\.realtek[a-zA-Z0-9]+\." With=".realtek."/>
+		<MetricReplace This="\.logicaldisk\." With=".volumes."/>
 		<MetricReplace This="\.memory\." With=".mem."/>
 	</MetricCleaning>
 	<Filtering>
