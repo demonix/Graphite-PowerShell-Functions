@@ -188,7 +188,7 @@ function SendMetrics
                     $Message = ""
                     foreach ($metricString in $Metrics)
                     {
-                        $Message += "$($metricString)`r"
+                        $Message += "$($metricString)`n"
                     }
                     $byte = $enc.GetBytes($Message)
                     $Sent = $udpobject.Send($byte,$byte.Length)
