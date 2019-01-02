@@ -55,46 +55,77 @@ Function Start-StatsToGraphite
     )
 
     # Run The Load XML Config Function
+    $configFileLastWrite = (Get-Item -Path $configPath).LastWriteTime
     $Config = Import-XMLConfig -ConfigPath $configPath
+	
+	
+	$modules = @( Get-ChildItem ($PSScriptRoot + "\plugins\*.ps1") | ForEach-Object { . $_.FullName} )
+	$plugins = $modules | %{ $_.Init()}
 
-    # Get Last Run Time
+	foreach ($plugin in $plugins)
+	{
+		$configureScriptBlock = 
+		{
+		param($config) 
+		$ConfigSectionName = $this.ConfigSectionName
+		
+			if ([bool]($config.ModulesConfigs.SelectNodes($ConfigSectionName)))
+			{
+				if ($config.ModulesConfigs.$ConfigSectionName.HasAttribute("Enabled"))
+				{
+				
+					if ($config.ModulesConfigs.$ConfigSectionName.GetAttribute("Enabled").ToLower() -eq 'true')
+					{
+						Write-Verbose $ConfigSectionName
+						$this.Config = $config.ModulesConfigs.$ConfigSectionName
+						Write-Verbose "Config metric path $($config.MetricPath)"
+						Write-Verbose "Config node host name $($config.NodeHostName)"
+						$this.MetricPath = $config.MetricPath
+						$this.NodeHostName = $config.NodeHostName
+						
+						if ($config.ModulesConfigs.$ConfigSectionName.HasAttribute("CustomPrefix"))
+						{
+							$this.MetricPath = $config.ModulesConfigs.$ConfigSectionName.GetAttribute("CustomPrefix")
+						}
+						if ($config.ModulesConfigs.$ConfigSectionName.HasAttribute("CustomNodeHostName"))
+						{
+							$this.NodeHostName = $config.ModulesConfigs.$ConfigSectionName.GetAttribute("CustomNodeHostName")
+						}
+						$this.Enabled = $true
+					} 
+					else
+					{
+						$this.Enabled = $false
+					}
+				}
+
+			} 
+			else
+			{
+				$this.Enabled = $false
+			}
+		}
+	
+		$memberParam = @{
+		MemberType = "ScriptMethod"
+		InputObject = $plugin
+		Name = "Configure"
+		Value = $configureScriptBlock
+		}
+		Add-Member @memberParam
+	}
+ 
+
+	foreach ($plugin in $plugins)
+	{
+		$plugin.Configure($Config)
+	}
+    
+	# Get Last Run Time
     $sleep = 0
 
-    $configFileLastWrite = (Get-Item -Path $configPath).LastWriteTime
-
-    if($ExcludePerfCounters -and -not $SqlMetrics) {
-        throw "Parameter combination provided will prevent any metrics from being collected"
-    }
-
-    if($SqlMetrics) {
-        if ($Config.MSSQLServers.Length -gt 0)
-        {
-            # Check for SQLPS Module
-            if (($listofSQLModules = Get-Module -List SQLPS).Length -eq 1)
-            {
-                # Load The SQL Module
-                Import-Module SQLPS -DisableNameChecking
-            }
-            # Check for the PS SQL SnapIn
-            elseif ((Test-Path ($env:ProgramFiles + '\Microsoft SQL Server\100\Tools\Binn\Microsoft.SqlServer.Management.PSProvider.dll')) `
-                -or (Test-Path ($env:ProgramFiles + ' (x86)' + '\Microsoft SQL Server\100\Tools\Binn\Microsoft.SqlServer.Management.PSProvider.dll')))
-            {
-                # Load The SQL SnapIns
-                Add-PSSnapin SqlServerCmdletSnapin100
-                Add-PSSnapin SqlServerProviderSnapin100
-            }
-            # If No Snapin's Found end the function
-            else
-            {
-                throw "Unable to find any SQL CmdLets. Please install them and try again."
-            }
-        }
-        else
-        {
-            Write-Warning "There are no SQL Servers in your configuration file. No SQL metrics will be collected."
-        }
-    }
-
+	
+	
     # Start Endless Loop
     while ($true)
     {
@@ -113,38 +144,42 @@ Function Start-StatsToGraphite
 
         $metricsToSend = @{}
 
-        if(-not $ExcludePerfCounters)
-        {
-            # Take the Sample of the Counter
-            $collections = Get-Counter -Counter $Config.Counters -SampleInterval 1 -MaxSamples 1
-
-            # Filter the Output of the Counters
-            $samples = $collections.CounterSamples
-
-            # Verbose
-            Write-Verbose "All Samples Collected"
-
-            # Loop Through All The Counters
-            foreach ($sample in $samples)
-            {
+		foreach ($plugin in $plugins)
+		{
+			Write-Verbose "Plugin name: $($plugin.PluginName)"
+			Write-Verbose "Plugin enabled: $($plugin.enabled)"
+			Write-Verbose "Plugin host name: $($plugin.NodeHostName)"
+			Write-Verbose "Plugin host name: $($plugin.NodeHostName)"
+			Write-Verbose "Plugin host metric path: $($plugin.MetricPath)"
+			
+			
+			$getMetricsStopWatch = [System.Diagnostics.Stopwatch]::StartNew()
+			$samples = $plugin.GetMetrics()
+			$getMetricsStopWatch.Stop()
+			Write-Verbose "Got metrics for $($plugin.PluginName) plugin: $($getMetricsStopWatch.Elapsed.TotalSeconds) seconds."
+				
+			foreach ($sample in $samples)
+			{
+				
+				
+				
                 if ($Config.ShowOutput)
                 {
                     Write-Verbose "Sample Name: $($sample.Path)"
                 }
-
-                # Create Stopwatch for Filter Time Period
+				 # Create Stopwatch for Filter Time Period
                 $filterStopWatch = [System.Diagnostics.Stopwatch]::StartNew()
 
                 # Check if there are filters or not
                 if ([string]::IsNullOrEmpty($Config.Filters) -or $sample.Path -notmatch [regex]$Config.Filters)
                 {
                     # Run the sample path through the ConvertTo-GraphiteMetric function
-                    $cleanNameOfSample = ConvertTo-GraphiteMetric -MetricToClean $sample.Path -HostName $Config.NodeHostName -MetricReplacementHash $Config.MetricReplace
+                    $cleanNameOfSample = ConvertTo-GraphiteMetric -MetricToClean $sample.Path -HostName $plugin.NodeHostName -MetricReplacementHash $Config.MetricReplace
 
                     # Build the full metric path
-                    $metricPath = $Config.MetricPath + '.' + $cleanNameOfSample
+                    $metricPath = $plugin.MetricPath + '.' + $cleanNameOfSample
 
-                    $metricsToSend[$metricPath] = $sample.Cookedvalue
+                    $metricsToSend[$metricPath] = $sample.Value
                 }
                 else
                 {
@@ -154,58 +189,9 @@ Function Start-StatsToGraphite
                 $filterStopWatch.Stop()
 
                 Write-Verbose "Job Execution Time To Get to Clean Metrics: $($filterStopWatch.Elapsed.TotalSeconds) seconds."
-
-            }# End for each sample loop
-        }# end if ExcludePerfCounters
-
-        if($SqlMetrics) {
-            # Loop through each SQL Server
-            foreach ($sqlServer in $Config.MSSQLServers)
-            {
-                Write-Verbose "Running through SQLServer $($sqlServer.ServerInstance)"
-                # Loop through each query for the SQL server
-                foreach ($query in $sqlServer.Queries)
-                {
-                    Write-Verbose "Current Query $($query.TSQL)"
-
-                    $sqlCmdParams = @{
-                        'ServerInstance' = $sqlServer.ServerInstance;
-                        'Database' = $query.Database;
-                        'Query' = $query.TSQL;
-                        'ConnectionTimeout' = $Config.MSSQLConnectTimeout;
-                        'QueryTimeout' = $Config.MSSQLQueryTimeout
-                    }
-
-                    # Run the Invoke-SqlCmd Cmdlet with a username and password only if they are present in the config file
-                    if (-not [string]::IsNullOrEmpty($sqlServer.Username) `
-                        -and -not [string]::IsNullOrEmpty($sqlServer.Password))
-                    {
-                        $sqlCmdParams['Username'] = $sqlServer.Username
-                        $sqlCmdParams['Password'] = $sqlServer.Password
-                    }
-
-                    # Run the SQL Command
-                    try
-                    {
-                        $commandMeasurement = Measure-Command -Expression {
-                            $sqlresult = Invoke-SQLCmd @sqlCmdParams
-
-                            # Build the MetricPath that will be used to send the metric to Graphite
-                            $metricPath = $Config.MSSQLMetricPath + '.' + $query.MetricName
-
-                            $metricsToSend[$metricPath] = $sqlresult[0]
-                        }
-
-                        Write-Verbose ('SQL Metric Collection Execution Time: ' + $commandMeasurement.TotalSeconds + ' seconds')
-                    }
-                    catch
-                    {
-                        $exceptionText = GetPrettyProblem $_
-                        throw "An error occurred with processing the SQL Query. $exceptionText"
-                    }
-                } #end foreach Query
-            } #end foreach SQL Server
-        }#endif SqlMetrics
+				
+			}
+		} 
 
         # Send To Graphite Server
 
@@ -223,7 +209,71 @@ Function Start-StatsToGraphite
 
         # Reloads The Configuration File After the Loop so new counters can be added on the fly
         if((Get-Item $configPath).LastWriteTime -gt (Get-Date -Date $configFileLastWrite)) {
-            $Config = Import-XMLConfig -ConfigPath $configPath
+			$configFileLastWrite = (Get-Item -Path $configPath).LastWriteTime
+			$Config = Import-XMLConfig -ConfigPath $configPath
+			
+				
+				
+				$modules = @( Get-ChildItem ($PSScriptRoot + "\plugins\*.ps1") | ForEach-Object { . $_.FullName} )
+				$plugins = $modules | %{ $_.Init()}
+			
+				foreach ($plugin in $plugins)
+				{
+					$configureScriptBlock = 
+					{
+					param($config) 
+					$ConfigSectionName = $this.ConfigSectionName
+					
+						if ([bool]($config.ModulesConfigs.SelectNodes($ConfigSectionName)))
+						{
+							if ($config.ModulesConfigs.$ConfigSectionName.HasAttribute("Enabled"))
+							{
+							
+								if ($config.ModulesConfigs.$ConfigSectionName.GetAttribute("Enabled").ToLower() -eq 'true')
+								{
+									Write-Verbose $ConfigSectionName
+									$this.Config = $config.ModulesConfigs.$ConfigSectionName
+									Write-Verbose "Config metric path $($config.MetricPath)"
+									Write-Verbose "Config node host name $($config.NodeHostName)"
+									$this.MetricPath = $config.MetricPath
+									$this.NodeHostName = $config.NodeHostName
+									
+									if ($config.ModulesConfigs.$ConfigSectionName.HasAttribute("CustomPrefix"))
+									{
+										$this.MetricPath = $config.ModulesConfigs.$ConfigSectionName.GetAttribute("CustomPrefix")
+									}
+									if ($config.ModulesConfigs.$ConfigSectionName.HasAttribute("CustomNodeHostName"))
+									{
+										$this.NodeHostName = $config.ModulesConfigs.$ConfigSectionName.GetAttribute("CustomNodeHostName")
+									}
+									$this.Enabled = $true
+								} 
+								else
+								{
+									$this.Enabled = $false
+								}
+							}
+			
+						} 
+						else
+						{
+							$this.Enabled = $false
+						}
+					}
+				
+					$memberParam = @{
+					MemberType = "ScriptMethod"
+					InputObject = $plugin
+					Name = "Configure"
+					Value = $configureScriptBlock
+					}
+					Add-Member @memberParam
+				}
+	
+			foreach ($plugin in $plugins)
+			{
+				$plugin.Configure($Config)
+			}
         }
 
         $iterationStopWatch.Stop()
@@ -232,7 +282,7 @@ Function Start-StatsToGraphite
         if ($Config.ShowOutput)
         {
             # Write To Console How Long Execution Took
-            $VerboseOutPut = 'PerfMon Job Execution Time: ' + $collectionTime.TotalSeconds + ' seconds'
+            $VerboseOutPut = 'Total Loop time: ' + $collectionTime.TotalSeconds + ' seconds'
             Write-Output $VerboseOutPut
         }
     }

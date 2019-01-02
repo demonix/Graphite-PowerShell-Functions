@@ -1,28 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Configuration>
 	<Graphite>
-		<CarbonServer>yourCarbonServerNameOrIP</CarbonServer>
+		<CarbonServer>127.0.0.1</CarbonServer>
 		<CarbonServerPort>2003</CarbonServerPort>
-		<MetricPath>datacenter1.servers</MetricPath>
+		<MetricPath>KE.servers</MetricPath>
 		<NodeHostName>$env:COMPUTERNAME</NodeHostName>
 		<MetricSendIntervalSeconds>5</MetricSendIntervalSeconds>
-		<SendUsingUDP>False</SendUsingUDP>
+		<SendUsingUDP>true</SendUsingUDP>
 	</Graphite>
+	<ModulesConfigs>
+		<VMMCloudUsage Enabled="true">
+			<CpuOvercommitRatio Value = 4/>
+			<VmmServer Name = "dev-vmm"/>
+			
+		</VMMCloudUsage>
+		<FailoverDhcpStats Enabled="true" />
+		<ClusterPhysicalDiskPerfCounters CustomPrefix="Custom.Prefix" CustomNodeHostName="CustomServer"> 
+			<Counter Name="% Idle Time"/>
+			<Counter Name="Current Disk Queue Length"/>
+			<Counter Name="Disk Reads/sec"/>
+			<Counter Name="Disk Transfers/sec"/>
+			<Counter Name="Disk Writes/sec"/>
+		</ClusterPhysicalDiskPerfCounters>
+		<OterConf>
+			<Counter Name="12213"/>
+			<Counter Name="dsfsdf"/>
+			<Counter Name="dsfadsgfdgsec"/>
+			<Counter Name="Disk Transfers/sec"/>
+			<Counter Name="Disk Writes/sec"/>
+		</OterConf>
+		<PerfCounters>
+			<Counter Name="\Network Interface(*)\Bytes Received/sec"/>
+			<Counter Name="\Network Interface(*)\Bytes Sent/sec"/>
+			<Counter Name="\Network Interface(*)\Packets Received Unicast/sec"/>
+			<Counter Name="\Network Interface(*)\Packets Sent Unicast/sec"/>
+			<Counter Name="\Network Interface(*)\Packets Received Non-Unicast/sec"/>
+			<Counter Name="\Network Interface(*)\Packets Sent Non-Unicast/sec"/>
+			<Counter Name="\Processor(_Total)\% Processor Time"/>
+			<Counter Name="\Memory\Available MBytes"/>
+			<Counter Name="\Memory\Pages/sec"/>
+			<Counter Name="\Memory\Pages Input/sec"/>
+			<Counter Name="\System\Processor Queue Length"/>
+			<Counter Name="\System\Threads"/>
+			<Counter Name="\PhysicalDisk(*)\Avg. Disk Write Queue Length"/>
+			<Counter Name="\PhysicalDisk(*)\Avg. Disk Read Queue Length"/>
+		</PerfCounters>
+	</ModulesConfigs>
 	<PerformanceCounters>
-		<Counter Name="\Network Interface(*)\Bytes Received/sec"/>
-		<Counter Name="\Network Interface(*)\Bytes Sent/sec"/>
-		<Counter Name="\Network Interface(*)\Packets Received Unicast/sec"/>
-		<Counter Name="\Network Interface(*)\Packets Sent Unicast/sec"/>
-		<Counter Name="\Network Interface(*)\Packets Received Non-Unicast/sec"/>
-		<Counter Name="\Network Interface(*)\Packets Sent Non-Unicast/sec"/>
-		<Counter Name="\Processor(_Total)\% Processor Time"/>
-		<Counter Name="\Memory\Available MBytes"/>
-		<Counter Name="\Memory\Pages/sec"/>
-		<Counter Name="\Memory\Pages Input/sec"/>
-		<Counter Name="\System\Processor Queue Length"/>
-		<Counter Name="\System\Threads"/>
-		<Counter Name="\PhysicalDisk(*)\Avg. Disk Write Queue Length"/>
-		<Counter Name="\PhysicalDisk(*)\Avg. Disk Read Queue Length"/>
+			<Counter Name="\PhysicalDisk(*)\Avg. Disk Read Queue Length"/>
 	</PerformanceCounters>
 	<MetricCleaning>
 		<!-- These will be found and replaced in the order they appear here -->

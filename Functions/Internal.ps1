@@ -98,6 +98,11 @@ Function Import-XMLConfig
     {
         $Config.Filters = $null
     }
+	$Config.ModulesConfigs = @()
+	ForEach ($moduleConfig in $xmlfile.Configuration.ModulesConfigs) 
+	{
+		$Config.ModulesConfigs += $moduleConfig
+	}
 
     # Doesn't throw errors if users decide to delete the SQL section from the XML file. Issue #32.
     try
