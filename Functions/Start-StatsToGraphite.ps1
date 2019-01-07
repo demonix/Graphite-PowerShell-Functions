@@ -129,6 +129,7 @@ Function Start-StatsToGraphite
     # Start Endless Loop
     while ($true)
     {
+	
         # Loop until enough time has passed to run the process again.
         if($sleep -gt 0) {
             Start-Sleep -Milliseconds $sleep
@@ -138,7 +139,7 @@ Function Start-StatsToGraphite
         $iterationStopWatch = [System.Diagnostics.Stopwatch]::StartNew()
 
         $nowUtc = [datetime]::UtcNow
-
+		Write-Output (Get-Date).tostring("yyyy-dd-MM hh:mm:ss")
         # Round Time to Nearest Time Period
         $nowUtc = $nowUtc.AddSeconds(- ($nowUtc.Second % $Config.MetricSendIntervalSeconds))
 
