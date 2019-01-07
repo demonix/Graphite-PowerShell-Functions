@@ -8,9 +8,10 @@
 		<MetricSendIntervalSeconds>5</MetricSendIntervalSeconds>
 		<SendUsingUDP>true</SendUsingUDP>
 	</Graphite>
-	<ModulesConfigs>
+	<ModulesConfigs />
+	<ModulesConfigs2>
 		<VMMCloudUsage Enabled="true">
-			<CpuOvercommitRatio Value = 4/>
+			<CpuOvercommitRatio Value = "4"/>
 			<VmmServer Name = "dev-vmm"/>
 			
 		</VMMCloudUsage>
@@ -45,7 +46,7 @@
 			<Counter Name="\PhysicalDisk(*)\Avg. Disk Write Queue Length"/>
 			<Counter Name="\PhysicalDisk(*)\Avg. Disk Read Queue Length"/>
 		</PerfCounters>
-	</ModulesConfigs>
+	</ModulesConfigs2>
 	<PerformanceCounters>
 			<Counter Name="\PhysicalDisk(*)\Avg. Disk Read Queue Length"/>
 	</PerformanceCounters>

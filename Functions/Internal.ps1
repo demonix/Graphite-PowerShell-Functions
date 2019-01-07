@@ -93,11 +93,13 @@ Function Import-XMLConfig
         $Config.Filters = $null
     }
 	$Config.ModulesConfigs = @()
-	ForEach ($moduleConfig in $xmlfile.Configuration.ModulesConfigs) 
+	if ($xmlfile.Configuration.ModulesConfigs.GetType().Name -eq 'XmlElement')
 	{
-		$Config.ModulesConfigs += $moduleConfig
+		ForEach ($moduleConfig in $xmlfile.Configuration.ModulesConfigs) 
+		{
+			$Config.ModulesConfigs += $moduleConfig
+		}
 	}
-
     Return $Config
 }
 

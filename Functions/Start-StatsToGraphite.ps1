@@ -69,7 +69,7 @@ Function Start-StatsToGraphite
 		param($config) 
 		$ConfigSectionName = $this.ConfigSectionName
 		
-			if ([bool]($config.ModulesConfigs.SelectNodes($ConfigSectionName)))
+			if (($config.ModulesConfigs.Length -gt 0) -and ([bool]($config.ModulesConfigs.SelectNodes($ConfigSectionName))))
 			{
 				if ($config.ModulesConfigs.$ConfigSectionName.HasAttribute("Enabled"))
 				{
@@ -224,7 +224,7 @@ Function Start-StatsToGraphite
 					param($config) 
 					$ConfigSectionName = $this.ConfigSectionName
 					
-						if ([bool]($config.ModulesConfigs.SelectNodes($ConfigSectionName)))
+						if (($config.ModulesConfigs.Length -gt 0) -and ([bool]($config.ModulesConfigs.SelectNodes($ConfigSectionName))))
 						{
 							if ($config.ModulesConfigs.$ConfigSectionName.HasAttribute("Enabled"))
 							{
