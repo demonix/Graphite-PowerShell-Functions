@@ -139,7 +139,7 @@ Function Start-StatsToGraphite
         $iterationStopWatch = [System.Diagnostics.Stopwatch]::StartNew()
 
         $nowUtc = [datetime]::UtcNow
-		Write-Output (Get-Date).tostring("yyyy-dd-MM hh:mm:ss")
+		Write-Output (Get-Date).tostring("yyyy-dd-MM HH:mm:ss")
         # Round Time to Nearest Time Period
         $nowUtc = $nowUtc.AddSeconds(- ($nowUtc.Second % $Config.MetricSendIntervalSeconds))
 
