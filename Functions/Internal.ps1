@@ -163,6 +163,8 @@ function SendMetrics
                         $Message += "$($metricString)`n"
                     }
                     $byte = $enc.GetBytes($Message)
+
+                    Write-Verbose "Byte Length: $($byte.Length)"
                     $Sent = $udpobject.Send($byte,$byte.Length)
                 }
 
