@@ -55,10 +55,10 @@ New-Module `
 	$alluserRoles = Get-SCUserRole
 	$allVms = Get-SCVirtualMachine
 	
-	$r = Get-SCCloud   | %{$cloud = $_; $users = $alluserRoles | ? Profile -ne "Administrator" | ? cloud -contains $cloud; $users | %{
+	$r = Get-SCCloud   | %{$cloud = $_; $users = $alluserRoles | ? Profile -ne "Administrator" |? Profile -ne "ReadOnlyAdmin"  | ? cloud -contains $cloud; $users | %{
 	
 	$user = $_; 
-	$usage = New-Object psobject
+    $usage = New-Object psobject
 	
 	$userVms = $allVms |  ? UserRole -eq $user | ? Cloud -eq $cloud
 	$runningUserVms = $userVms | ? Status -eq Running
@@ -159,10 +159,12 @@ New-Module `
 	
 	
 	
-	$cloudHostgroup = Get-scvmhostgroup Clusters;
+	$cloudHostgroup = Get-scvmhostgroup 'Standard Testing';
 	$cloudHosts=$cloudHostgroup.AllChildHosts;
-	$totalStandardStorageCapacity = ($cloudHosts | %{$_.RegisteredStorageFileShares} | Select-Object -Unique | measure -Sum Capacity).Sum;
-	
+
+    [long]$totalStandardLocalStorageCapacity = ($cloudHosts | %{$_.DiskVolumes | ? IsAvailableForPlacement -eq $true } | measure -Sum Capacity).Sum;
+	[long]$totalStandardClusterStorageCapacity = ($cloudHosts | %{$_.RegisteredStorageFileShares} | Select-Object -Unique | measure -Sum Capacity).Sum;
+	$totalStandardStorageCapacity = $totalStandardClusterStorageCapacity + $totalStandardLocalStorageCapacity
 	$totalMemoryMb = ($cloudHosts | measure -Sum  TotalMemory).Sum / 1Mb;
 	$totalMemoryReserveMb = ($cloudHosts | measure -Sum  MemoryReserveMB).Sum;
 	$totalCores = ($cloudHosts | measure -Sum  LogicalProcessorCount).Sum;
