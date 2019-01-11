@@ -54,73 +54,58 @@ Function Start-StatsToGraphite
         [switch]$SqlMetrics = $false
     )
 
+	$configureMuduleScriptBlock = 
+				{
+				param($config, $moduleConfig) 
+				$ConfigSectionName = $this.ConfigSectionName
+							
+								Write-Verbose $ConfigSectionName
+								$this.Config = $moduleConfig
+								Write-Verbose "Config metric path $($config.MetricPath)"
+								Write-Verbose "Config node host name $($config.NodeHostName)"
+								$this.MetricPath = $config.MetricPath
+								$this.NodeHostName = $config.NodeHostName
+								
+								if ($moduleConfig.HasAttribute("CustomPrefix"))
+								{
+									$this.MetricPath = $moduleConfig.GetAttribute("CustomPrefix")
+								}
+								if ($moduleConfig.HasAttribute("CustomNodeHostName"))
+								{
+									$this.NodeHostName = $moduleConfig.GetAttribute("CustomNodeHostName")
+								}
+								$this.Enabled = $true
+				}
+				
     # Run The Load XML Config Function
     $configFileLastWrite = (Get-Item -Path $configPath).LastWriteTime
     $Config = Import-XMLConfig -ConfigPath $configPath
-	
-	
-	$modules = @( Get-ChildItem ($PSScriptRoot + "\plugins\*.ps1") | ForEach-Object { . $_.FullName} )
-	$plugins = $modules | %{ $_.Init()}
 
-	foreach ($plugin in $plugins)
-	{
-		$configureScriptBlock = 
-		{
-		param($config) 
-		$ConfigSectionName = $this.ConfigSectionName
-		
-			if (($config.ModulesConfigs.Length -gt 0) -and ([bool]($config.ModulesConfigs.SelectNodes($ConfigSectionName))))
-			{
-				if ($config.ModulesConfigs.$ConfigSectionName.HasAttribute("Enabled"))
-				{
+	$plugins = @()
+	Write-Verbose "ModulesConfigs len $($config.ModulesConfigs.Length)"
+	if ($config.ModulesConfigs.Length -gt 0) {
+		foreach ($moduleConfig in $config.ModulesConfigs.GetEnumerator() ) {
+			if (($moduleConfig.HasAttribute("Enabled")) -and ($moduleConfig.GetAttribute("Enabled").ToLower() -eq 'true')) {
+				$module = @( Get-ChildItem ($PSScriptRoot + "\plugins\$($moduleConfig.Name).ps1") | ForEach-Object { . $_.FullName} )
+				$plugin = $module.Init()
 				
-					if ($config.ModulesConfigs.$ConfigSectionName.GetAttribute("Enabled").ToLower() -eq 'true')
-					{
-						Write-Verbose $ConfigSectionName
-						$this.Config = $config.ModulesConfigs.$ConfigSectionName
-						Write-Verbose "Config metric path $($config.MetricPath)"
-						Write-Verbose "Config node host name $($config.NodeHostName)"
-						$this.MetricPath = $config.MetricPath
-						$this.NodeHostName = $config.NodeHostName
-						
-						if ($config.ModulesConfigs.$ConfigSectionName.HasAttribute("CustomPrefix"))
-						{
-							$this.MetricPath = $config.ModulesConfigs.$ConfigSectionName.GetAttribute("CustomPrefix")
-						}
-						if ($config.ModulesConfigs.$ConfigSectionName.HasAttribute("CustomNodeHostName"))
-						{
-							$this.NodeHostName = $config.ModulesConfigs.$ConfigSectionName.GetAttribute("CustomNodeHostName")
-						}
-						$this.Enabled = $true
-					} 
-					else
-					{
-						$this.Enabled = $false
-					}
+				
+			
+				$memberParam = @{
+				MemberType = "ScriptMethod"
+				InputObject = $plugin
+				Name = "Configure"
+				Value = $configureMuduleScriptBlock
 				}
-
-			} 
-			else
-			{
-				$this.Enabled = $false
+				Add-Member @memberParam
+				$plugin.Configure($Config, $moduleConfig)
+				$plugins += $plugin
 			}
+			
 		}
+	}
 	
-		$memberParam = @{
-		MemberType = "ScriptMethod"
-		InputObject = $plugin
-		Name = "Configure"
-		Value = $configureScriptBlock
-		}
-		Add-Member @memberParam
-	}
- 
-
-	foreach ($plugin in $plugins)
-	{
-		$plugin.Configure($Config)
-	}
-    
+	
 	# Get Last Run Time
     $sleep = 0
 
@@ -149,7 +134,6 @@ Function Start-StatsToGraphite
 		{
 			Write-Verbose "Plugin name: $($plugin.PluginName)"
 			Write-Verbose "Plugin enabled: $($plugin.enabled)"
-			Write-Verbose "Plugin host name: $($plugin.NodeHostName)"
 			Write-Verbose "Plugin host name: $($plugin.NodeHostName)"
 			Write-Verbose "Plugin host metric path: $($plugin.MetricPath)"
 			
@@ -213,68 +197,28 @@ Function Start-StatsToGraphite
 			$configFileLastWrite = (Get-Item -Path $configPath).LastWriteTime
 			$Config = Import-XMLConfig -ConfigPath $configPath
 			
-				
-				
-				$modules = @( Get-ChildItem ($PSScriptRoot + "\plugins\*.ps1") | ForEach-Object { . $_.FullName} )
-				$plugins = $modules | %{ $_.Init()}
-			
-				foreach ($plugin in $plugins)
-				{
-					$configureScriptBlock = 
-					{
-					param($config) 
-					$ConfigSectionName = $this.ConfigSectionName
+			$plugins = @()
+			if ($config.ModulesConfigs.Length -gt 0) {
+				foreach ($moduleConfig in $config.ModulesConfigs.GetEnumerator() ) {
+					if (($moduleConfig.HasAttribute("Enabled")) -and ($moduleConfig.GetAttribute("Enabled").ToLower() -eq 'true')) {
+						$module = @( Get-ChildItem ($PSScriptRoot + "\plugins\$($moduleConfig.Name).ps1") | ForEach-Object { . $_.FullName} )
+						$plugin = $module.Init()
 					
-						if (($config.ModulesConfigs.Length -gt 0) -and ([bool]($config.ModulesConfigs.SelectNodes($ConfigSectionName))))
-						{
-							if ($config.ModulesConfigs.$ConfigSectionName.HasAttribute("Enabled"))
-							{
-							
-								if ($config.ModulesConfigs.$ConfigSectionName.GetAttribute("Enabled").ToLower() -eq 'true')
-								{
-									Write-Verbose $ConfigSectionName
-									$this.Config = $config.ModulesConfigs.$ConfigSectionName
-									Write-Verbose "Config metric path $($config.MetricPath)"
-									Write-Verbose "Config node host name $($config.NodeHostName)"
-									$this.MetricPath = $config.MetricPath
-									$this.NodeHostName = $config.NodeHostName
-									
-									if ($config.ModulesConfigs.$ConfigSectionName.HasAttribute("CustomPrefix"))
-									{
-										$this.MetricPath = $config.ModulesConfigs.$ConfigSectionName.GetAttribute("CustomPrefix")
-									}
-									if ($config.ModulesConfigs.$ConfigSectionName.HasAttribute("CustomNodeHostName"))
-									{
-										$this.NodeHostName = $config.ModulesConfigs.$ConfigSectionName.GetAttribute("CustomNodeHostName")
-									}
-									$this.Enabled = $true
-								} 
-								else
-								{
-									$this.Enabled = $false
-								}
-							}
-			
-						} 
-						else
-						{
-							$this.Enabled = $false
+						$memberParam = @{
+						MemberType = "ScriptMethod"
+						InputObject = $plugin
+						Name = "Configure"
+						Value = $configureMuduleScriptBlock
 						}
+						Add-Member @memberParam
+						$plugin.Configure($Config, $moduleConfig)
+						$plugins += $plugin
 					}
-				
-					$memberParam = @{
-					MemberType = "ScriptMethod"
-					InputObject = $plugin
-					Name = "Configure"
-					Value = $configureScriptBlock
-					}
-					Add-Member @memberParam
+					
 				}
-	
-			foreach ($plugin in $plugins)
-			{
-				$plugin.Configure($Config)
 			}
+				
+			
         }
 
         $iterationStopWatch.Stop()

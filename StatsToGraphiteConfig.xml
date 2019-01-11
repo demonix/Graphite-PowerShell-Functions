@@ -8,14 +8,17 @@
 		<MetricSendIntervalSeconds>5</MetricSendIntervalSeconds>
 		<SendUsingUDP>true</SendUsingUDP>
 	</Graphite>
-	<ModulesConfigs />
-	<ModulesConfigs2>
-		<VMMCloudUsage Enabled="true">
+	
+	<ModulesConfigs>
+		<Example Enabled="true" CustomPrefix="Custom.Prefix1" CustomNodeHostName="CustomServer1"/>
+		<Example Enabled="true" CustomPrefix="Custom.Prefix2" CustomNodeHostName="CustomServer1"/>
+		
+		<VMMCloudUsage Enabled="false">
 			<CpuOvercommitRatio Value = "4"/>
 			<VmmServer Name = "dev-vmm"/>
 			
 		</VMMCloudUsage>
-		<FailoverDhcpStats Enabled="true" />
+		<FailoverDhcpStats Enabled="false" />
 		<ClusterPhysicalDiskPerfCounters CustomPrefix="Custom.Prefix" CustomNodeHostName="CustomServer"> 
 			<Counter Name="% Idle Time"/>
 			<Counter Name="Current Disk Queue Length"/>
@@ -46,10 +49,7 @@
 			<Counter Name="\PhysicalDisk(*)\Avg. Disk Write Queue Length"/>
 			<Counter Name="\PhysicalDisk(*)\Avg. Disk Read Queue Length"/>
 		</PerfCounters>
-	</ModulesConfigs2>
-	<PerformanceCounters>
-			<Counter Name="\PhysicalDisk(*)\Avg. Disk Read Queue Length"/>
-	</PerformanceCounters>
+	</ModulesConfigs>
 	<MetricCleaning>
 		<!-- These will be found and replaced in the order they appear here -->
 		<MetricReplace This="physicaldisk\(.* (.*)\:\)" With="physicaldisk.$1-drive"/>

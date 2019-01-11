@@ -95,7 +95,7 @@ Function Import-XMLConfig
 	$Config.ModulesConfigs = @()
 	if ($xmlfile.Configuration.ModulesConfigs.GetType().Name -eq 'XmlElement')
 	{
-		ForEach ($moduleConfig in $xmlfile.Configuration.ModulesConfigs) 
+		ForEach ($moduleConfig in $xmlfile.Configuration.ModulesConfigs.GetEnumerator()) 
 		{
 			$Config.ModulesConfigs += $moduleConfig
 		}
