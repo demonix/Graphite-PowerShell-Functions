@@ -17,7 +17,8 @@ New-Module `
 		$getMetricsBlock = 
 		{
 			if (!($this.Enabled)) {return}
-			Get-ClusterGroup | select GroupType, OwnerNode, Name, State  | %{ [pscustomobject]@{ Path="\\$($env:COMPUTERNAME)\ClusterGroupState\$($_.GroupType)\$($_.Name)"; Value=[int]$_.State } }			
+			$clusterName = (Get-Cluster).name
+			Get-ClusterGroup | select GroupType, OwnerNode, Name, State  | %{ [pscustomobject]@{ Path="\\$($clusterName)\$($env:COMPUTERNAME)\ClusterGroupState\$($_.GroupType)\$($_.Name)"; Value=[int]$_.State } }
 		}
 	
 		$memberParam = @{

@@ -45,7 +45,7 @@ New-Module `
         $countersToGet
     )
 	
-	
+	   $clusterName = (Get-Cluster).name
        $clusterDisks = Get-WmiObject -namespace root\MSCluster MSCluster_Resource -filter "Type='Physical Disk'"
 	   #if (($clusterDisks.length -gt 0) -and !($clusterDisks[0].OwnerNode))
 	   if (($clusterDisks.length -gt 0) -and !(Get-Member -inputobject $clusterDisks[0] -name "OwnerNode" -Membertype Properties))
@@ -69,7 +69,7 @@ New-Module `
 			$diskNumber = $_.DiskNumber; 
 			$diskName = $_.DiskName -replace "\)", "_"; 
 			$diskName = $diskName -replace "\(", "_"; 
-			$countersToGet| %{ $counterNames.add("\\$($env:COMPUTERNAME)\PhysicalDisk($diskNumber)\$($_)".toLower(), "\\$($env:COMPUTERNAME)\PhysicalDisk($diskName)\$($_)" )}}
+			$countersToGet| %{ $counterNames.add("\\$($env:COMPUTERNAME)\PhysicalDisk($diskNumber)\$($_)".toLower(), "\\$($clusterName)\$($env:COMPUTERNAME)\PhysicalDisk($diskName)\$($_)" )}}
 
 	return 	$counterNames
 		
