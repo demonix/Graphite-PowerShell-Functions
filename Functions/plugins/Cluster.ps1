@@ -18,7 +18,7 @@ New-Module `
 		{
 			if (!($this.Enabled)) {return}
 			$clusterName = (Get-Cluster).name
-			Get-ClusterGroup | select GroupType, OwnerNode, Name, State  | %{ [pscustomobject]@{ Path="\\$($clusterName)\$($env:COMPUTERNAME)\ClusterGroupState\$($_.GroupType)\$($_.Name)"; Value=[int]$_.State } }
+			Get-ClusterGroup | select GroupType, OwnerNode, Name, State | ? GroupType -ne 'AvailableStorage' | ? GroupType -ne 'VirtualMachine' | %{ [pscustomobject]@{ Path="\\$($clusterName)\$($env:COMPUTERNAME)\ClusterGroupState\$($_.GroupType)\$($_.Name.Replace('(','').Replace(')',''))"; Value=[int]$_.State } }
 		}
 	
 		$memberParam = @{
