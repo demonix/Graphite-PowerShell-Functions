@@ -1,26 +1,30 @@
 New-Module `
 -AsCustomObject `
--name PerfCountersModule `
+-name VMMHost `
 -ScriptBlock { 
 
 	function Init 
 	{
 		$plugin = [PSCustomObject]@{
-			PluginName = "PerfCounters"
+			PluginName = "VMMHost"
 			Enabled = $false
 			Config = $null
 			MetricPath = ""
 			NodeHostName = ""
-			ConfigSectionName = "PerfCounters"
+			ConfigSectionName = "VMMHost"
 		}
 	
 		$getMetricsBlock = 
 		{
 			if (!($this.Enabled)) {return}
-			$couterSamples = (Get-Counter -Counter $this.Config.Counter.Name -SampleInterval 1 -MaxSamples 1).CounterSamples 
-			if ($couterSamples -ne $null) {
-				$couterSamples | %{ [pscustomobject]@{ Path=$_.Path; Value=$_.Cookedvalue } } 
+			$vmmHosts = Get-SCVMHost -VMMServer $this.Config.VmmServer
+			$Ping = [System.Net.NetworkInformation.Ping]::new()
+			$vmmHosts | %{
+			   $pingReply = $Ping.Send($_.fqdn,150)
+			   $isAlive = $pingReply.Status -eq Success
+			   [pscustomobject]@{ Path="\\$($_.ComputerName)\IsAlive"; Value=[int]$isAlive }
 			}
+			
 		}
 	
 		$memberParam = @{
@@ -33,6 +37,8 @@ New-Module `
 		return $plugin
 	}
 } 
+
+
 
 
 

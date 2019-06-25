@@ -23,10 +23,13 @@ New-Module `
 			
 			$counterstoGet = Get-ClusterDiskCounters $this.Config.Counter.Name
 						
-			(Get-Counter -Counter @($counterstoGet.Keys) -SampleInterval 1 -MaxSamples 1).CounterSamples | %{ 
-			
-			[pscustomobject]@{ Path=$counterstoGet[$_.Path]; Value=$_.Cookedvalue } 
-			} 
+			$couterSamples = (Get-Counter -Counter @($counterstoGet.Keys) -SampleInterval 1 -MaxSamples 1).CounterSamples
+			if ($couterSamples -ne $null) {
+				$couterSamples | %{ 
+				
+				[pscustomobject]@{ Path=$counterstoGet[$_.Path]; Value=$_.Cookedvalue } 
+				} 
+			}
 		}
 	
 		$memberParam = @{
