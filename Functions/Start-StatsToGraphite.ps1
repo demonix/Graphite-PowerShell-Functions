@@ -1,28 +1,3 @@
-function Start-StatsToGraphiteWrapper
-{
-
-$rs = [runspacefactory]::CreateRunspacePool()
-$rs.Open()
-for() {
-    $ps = [powershell]::Create()
-    $ps.RunspacePool = $rs
-    $p = $ps.AddScript('
-	class Foo {
-Foo(){}
-[string] Bar() {
-write-Error ''err''
-return ''s''
-}
-}
-$x = [foo]::new()
-1..2500 | %{$x.Bar()}
-').Invoke()
-    $ps.Dispose()
-}
-
-
-}
-
 Function Start-StatsToGraphite
 {
 <#
