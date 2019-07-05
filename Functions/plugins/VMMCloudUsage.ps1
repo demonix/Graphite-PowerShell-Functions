@@ -1,48 +1,7 @@
-New-Module `
--AsCustomObject `
--name VMMCloudUsage `
--ScriptBlock { 
+param([Hashtable]$GlobalConfig, [System.Xml.XmlElement]$ModuleConfig)
 
-	function Init 
-	{
-		$plugin = [PSCustomObject]@{
-			PluginName = "VMMCloudUsage"
-			Enabled = $false
-			Config = $null
-			MetricPath = ""
-			NodeHostName = ""
-			ConfigSectionName = "VMMCloudUsage"
-		}
-	
-		$getMetricsBlock = 
-		{
-			if (!($this.Enabled)) {return}
-			$cui = Get-CloudUsageInfo -CpuOvercommitRatio $this.Config.CpuOvercommitRatio.Value  -VmmServerName $this.Config.VmmServer.Name
-			$cui.PerCloudStats | %{
-				$CloudName = $_.CloudName
-				if ($CloudName -eq 'Simple-Cloud')
-					{$CloudName += "-"+$_.UserName.Replace("@skbkontur.ru", "")}
-					$CloudName = $CloudName.Replace(".", "-")
-					[pscustomobject]@{ Path=  "{0}.RunningVms" -f $CloudName ; Value=$_.RunningVms}
-					[pscustomobject]@{ Path=  "{0}.CPUUsageCount" -f $CloudName ; Value=$_.CPUUsageCount}
-					[pscustomobject]@{ Path=  "{0}.CpuUsagePercent" -f $CloudName ; Value=$_.CpuUsagePercent}
-					[pscustomobject]@{ Path=  "{0}.MemoryUsageMB" -f $CloudName ; Value=$_.MemoryUsageMB}
-					[pscustomobject]@{ Path=  "{0}.MemoryUsagePercent" -f $CloudName ; Value=$_.MemoryUsagePercent}
-					[pscustomobject]@{ Path=  "{0}.StorageCurrentGB" -f $CloudName ; Value=$_.StorageCurrentGB}
-					[pscustomobject]@{ Path=  "{0}.StorageUsagePercent" -f $CloudName ; Value=$_.StorageUsagePercent}
-				}
-		}
-	
-		$memberParam = @{
-			MemberType = "ScriptMethod"
-			InputObject = $plugin
-			Name = "GetMetrics"
-			Value = $getMetricsBlock
-		}
-		Add-Member @memberParam
-		return $plugin
-	}
-	
+
+
 	function Get-CloudUsageInfo {
 	param(
 		
@@ -228,6 +187,38 @@ New-Module `
 	$results | Add-Member -NotePropertyName TotalUsageStats -NotePropertyValue @($loadTotalUsage, $standardTotalUsage)
 	return $results
 	}
-
-
+	
+	
+	
+function GetVMMCloudUsage {
+param ([System.Xml.XmlElement]$ModuleConfig)
+			
+$cui = Get-CloudUsageInfo -CpuOvercommitRatio $ModuleConfig.CpuOvercommitRatio.Value  -VmmServerName $ModuleConfig.VmmServer.Name
+			$cui.PerCloudStats | %{
+				$CloudName = $_.CloudName
+				if ($CloudName -eq 'Simple-Cloud')
+					{$CloudName += "-"+$_.UserName.Replace("@skbkontur.ru", "")}
+					$CloudName = $CloudName.Replace(".", "-")
+					[pscustomobject]@{ Path=  "{0}.RunningVms" -f $CloudName ; Value=$_.RunningVms}
+					[pscustomobject]@{ Path=  "{0}.CPUUsageCount" -f $CloudName ; Value=$_.CPUUsageCount}
+					[pscustomobject]@{ Path=  "{0}.CpuUsagePercent" -f $CloudName ; Value=$_.CpuUsagePercent}
+					[pscustomobject]@{ Path=  "{0}.MemoryUsageMB" -f $CloudName ; Value=$_.MemoryUsageMB}
+					[pscustomobject]@{ Path=  "{0}.MemoryUsagePercent" -f $CloudName ; Value=$_.MemoryUsagePercent}
+					[pscustomobject]@{ Path=  "{0}.StorageCurrentGB" -f $CloudName ; Value=$_.StorageCurrentGB}
+					[pscustomobject]@{ Path=  "{0}.StorageUsagePercent" -f $CloudName ; Value=$_.StorageUsagePercent}
+				}	
 }
+
+$MetricPath = $GlobalConfig.MetricPath
+$NodeHostName = $GlobalConfig.NodeHostName
+
+if ($ModuleConfig.HasAttribute("CustomPrefix"))
+{
+	$MetricPath = $ModuleConfig.GetAttribute("CustomPrefix")
+}
+if ($ModuleConfig.HasAttribute("CustomNodeHostName"))
+{
+	$NodeHostName = $ModuleConfig.GetAttribute("CustomNodeHostName")
+}
+
+return [pscustomobject]@{PluginName = "VMMCloudUsage"; FunctionName="GetVMMCloudUsage"; GlobalConfig=$GlobalConfig; ModuleConfig=$ModuleConfig; NodeHostName=$NodeHostName; MetricPath=$MetricPath }

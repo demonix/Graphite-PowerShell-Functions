@@ -1,42 +1,32 @@
-New-Module `
--AsCustomObject `
--name VMMHost `
--ScriptBlock { 
+param([Hashtable]$GlobalConfig, [System.Xml.XmlElement]$ModuleConfig)
 
-	function Init 
-	{
-		$plugin = [PSCustomObject]@{
-			PluginName = "VMMHost"
-			Enabled = $false
-			Config = $null
-			MetricPath = ""
-			NodeHostName = ""
-			ConfigSectionName = "VMMHost"
-		}
+
+function GetVMMHostAliveness {
+param ([System.Xml.XmlElement]$ModuleConfig)
 	
-		$getMetricsBlock = 
-		{
-			if (!($this.Enabled)) {return}
-			$vmmHosts = Get-SCVMHost -VMMServer $this.Config.VmmServer
-			$Ping = [System.Net.NetworkInformation.Ping]::new()
-			$vmmHosts | %{
-			   $pingReply = $Ping.Send($_.fqdn,150)
-			   $isAlive = $pingReply.Status -eq Success
-			   [pscustomobject]@{ Path="\\$($_.ComputerName)\IsAlive"; Value=[int]$isAlive }
-			}
+$vmmHosts = Get-SCVMHost -VMMServer $ModuleConfig.VmmServer
+$Ping = [System.Net.NetworkInformation.Ping]::new()
+$vmmHosts | %{
+   $pingReply = $Ping.Send($_.fqdn,150)
+   $isAlive = $pingReply.Status -eq Success
+   [pscustomobject]@{ Path="\\$($_.ComputerName)\IsAlive"; Value=[int]$isAlive }
+}
 			
-		}
-	
-		$memberParam = @{
-			MemberType = "ScriptMethod"
-			InputObject = $plugin
-			Name = "GetMetrics"
-			Value = $getMetricsBlock
-		}
-		Add-Member @memberParam
-		return $plugin
-	}
-} 
+}
+
+$MetricPath = $GlobalConfig.MetricPath
+$NodeHostName = $GlobalConfig.NodeHostName
+
+if ($ModuleConfig.HasAttribute("CustomPrefix"))
+{
+	$MetricPath = $ModuleConfig.GetAttribute("CustomPrefix")
+}
+if ($ModuleConfig.HasAttribute("CustomNodeHostName"))
+{
+	$NodeHostName = $ModuleConfig.GetAttribute("CustomNodeHostName")
+}
+
+return [pscustomobject]@{PluginName = "VMMHostAliveness"; FunctionName="GetVMMHostAliveness"; GlobalConfig=$GlobalConfig; ModuleConfig=$ModuleConfig; NodeHostName=$NodeHostName; MetricPath=$MetricPath }
 
 
 

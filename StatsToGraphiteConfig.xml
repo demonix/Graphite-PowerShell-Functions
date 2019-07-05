@@ -10,7 +10,7 @@
 	</Graphite>
 	
 	<ModulesConfigs>
-		<Example Enabled="true" CustomPrefix="Custom.Prefix1" CustomNodeHostName="CustomServer1"/>
+		<!--Example Enabled="true" CustomPrefix="Custom.Prefix1" CustomNodeHostName="CustomServer1"/>
 		<Example Enabled="true" CustomPrefix="Custom.Prefix2" CustomNodeHostName="CustomServer1"/>
 		
 		<VMMCloudUsage Enabled="false">
@@ -32,8 +32,8 @@
 			<Counter Name="dsfadsgfdgsec"/>
 			<Counter Name="Disk Transfers/sec"/>
 			<Counter Name="Disk Writes/sec"/>
-		</OterConf>
-		<PerfCounters>
+		</OterConf-->
+		<PerfCounters Enabled="true">
 			<Counter Name="\Network Interface(*)\Bytes Received/sec"/>
 			<Counter Name="\Network Interface(*)\Bytes Sent/sec"/>
 			<Counter Name="\Network Interface(*)\Packets Received Unicast/sec"/>

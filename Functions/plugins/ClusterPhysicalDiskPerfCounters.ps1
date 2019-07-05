@@ -1,48 +1,6 @@
-New-Module `
--AsCustomObject `
--name ClusterPhysicalDiskPerfCountersModule `
--ScriptBlock { 
+param([Hashtable]$GlobalConfig, [System.Xml.XmlElement]$ModuleConfig)
 
-	function Init 
-	{
-		$plugin = [PSCustomObject]@{
-			PluginName = "ClusterPhysicalDiskPerfCounters"
-			Enabled = $false
-			Config = $null
-			MetricPath = ""
-			NodeHostName = ""
-			ConfigSectionName = "ClusterPhysicalDiskPerfCounters"
-		}
-	
-		$getMetricsBlock = 
-		{
-		
-			if (!($this.Enabled)) {return}
-			#формирует словарь полный путь (с именем компа) до счетчика с цифровым номером диска -> счетчик с буковй диска
-			#получает метрики по цифровому номеру, а наружу отдает с буквой диска
-			
-			$counterstoGet = Get-ClusterDiskCounters $this.Config.Counter.Name
-						
-			$couterSamples = (Get-Counter -Counter @($counterstoGet.Keys) -SampleInterval 1 -MaxSamples 1).CounterSamples
-			if ($couterSamples -ne $null) {
-				$couterSamples | %{ 
-				
-				[pscustomobject]@{ Path=$counterstoGet[$_.Path]; Value=$_.Cookedvalue } 
-				} 
-			}
-		}
-	
-		$memberParam = @{
-			MemberType = "ScriptMethod"
-			InputObject = $plugin
-			Name = "GetMetrics"
-			Value = $getMetricsBlock
-		}
-		Add-Member @memberParam
-		return $plugin
-	}
-	
-	function Get-ClusterDiskCounters {
+function Get-ClusterDiskCounterList {
 	param (
         
         $countersToGet
@@ -77,8 +35,39 @@ New-Module `
 	return 	$counterNames
 		
 		
-	}
-} 
+}
+	
+function GetClusterPhysicalDiskPerfCounters {
+param ([System.Xml.XmlElement]$ModuleConfig)
+
+$counterstoGet = Get-ClusterDiskCounters $ModuleConfig.Counter.Name
+						
+			$couterSamples = (Get-Counter -Counter @($counterstoGet.Keys) -SampleInterval 1 -MaxSamples 1).CounterSamples
+			if ($couterSamples -ne $null) {
+				$couterSamples | %{ 
+				
+				[pscustomobject]@{ Path=$counterstoGet[$_.Path]; Value=$_.Cookedvalue } 
+				} 
+			}
+}
+
+$MetricPath = $GlobalConfig.MetricPath
+$NodeHostName = $GlobalConfig.NodeHostName
+
+if ($ModuleConfig.HasAttribute("CustomPrefix"))
+{
+	$MetricPath = $ModuleConfig.GetAttribute("CustomPrefix")
+}
+if ($ModuleConfig.HasAttribute("CustomNodeHostName"))
+{
+	$NodeHostName = $ModuleConfig.GetAttribute("CustomNodeHostName")
+}
+
+return [pscustomobject]@{PluginName = "ClusterPhysicalDiskPerfCounters"; FunctionName="GetClusterPhysicalDiskPerfCounters"; GlobalConfig=$GlobalConfig; ModuleConfig=$ModuleConfig; NodeHostName=$NodeHostName; MetricPath=$MetricPath }
+
+
+
+
 
 
 

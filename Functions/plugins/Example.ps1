@@ -1,36 +1,27 @@
-New-Module `
--AsCustomObject `
--name Example `
--ScriptBlock { 
+param([Hashtable]$GlobalConfig, [System.Xml.XmlElement]$ModuleConfig)
 
-	function Init 
-	{
-		$plugin = [PSCustomObject]@{
-			PluginName = "Example"
-			Enabled = $false
-			Config = $null
-			MetricPath = ""
-			NodeHostName = ""
-			ConfigSectionName = "Example"
-		}
-	
-		$getMetricsBlock = 
-		{
-			if (!($this.Enabled)) {return}
+
+function GetExampleCounters {
+param ([System.Xml.XmlElement]$ModuleConfig)
 			
-			[pscustomobject]@{ Path="$($this.NodeHostName).Example"; Value=1}
-		}
-	
-		$memberParam = @{
-			MemberType = "ScriptMethod"
-			InputObject = $plugin
-			Name = "GetMetrics"
-			Value = $getMetricsBlock
-		}
-		Add-Member @memberParam
-		return $plugin
-	}
-} 
+[pscustomobject]@{ Path="$($this.NodeHostName).Example"; Value=1}
+			
+}
+
+$MetricPath = $GlobalConfig.MetricPath
+$NodeHostName = $GlobalConfig.NodeHostName
+
+if ($ModuleConfig.HasAttribute("CustomPrefix"))
+{
+	$MetricPath = $ModuleConfig.GetAttribute("CustomPrefix")
+}
+if ($ModuleConfig.HasAttribute("CustomNodeHostName"))
+{
+	$NodeHostName = $ModuleConfig.GetAttribute("CustomNodeHostName")
+}
+
+return [pscustomobject]@{PluginName = "ExampleCounters"; FunctionName="GetExampleCounters"; GlobalConfig=$GlobalConfig; ModuleConfig=$ModuleConfig; NodeHostName=$NodeHostName; MetricPath=$MetricPath }
+
 
 
 

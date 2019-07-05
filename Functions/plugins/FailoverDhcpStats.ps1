@@ -1,37 +1,6 @@
-New-Module `
--AsCustomObject `
--name FailoverDhcpStats `
--ScriptBlock { 
+param([Hashtable]$GlobalConfig, [System.Xml.XmlElement]$ModuleConfig)
 
-	function Init 
-	{
-		$plugin = [PSCustomObject]@{
-			PluginName = "FailoverDhcpStats"
-			Enabled = $false
-			Config = $null
-			MetricPath = ""
-			NodeHostName = ""
-			ConfigSectionName = "FailoverDhcpStats"
-		}
-	
-		$getMetricsBlock = 
-		{
-		
-			if (!($this.Enabled)) {return}
-			Get-DhcpStats 
-		}
-	
-		$memberParam = @{
-			MemberType = "ScriptMethod"
-			InputObject = $plugin
-			Name = "GetMetrics"
-			Value = $getMetricsBlock
-		}
-		Add-Member @memberParam
-		return $plugin
-	}
-	
-	function Get-DhcpStats {
+function Get-DhcpStats {
 		$failover = Get-DhcpServerv4Failover 
 		
 		$primaryServer = $failover.PrimaryServerName.Split(".")[0].tolower().Replace('\','-').Replace('.','-')
@@ -89,10 +58,27 @@ New-Module `
 		}
 	
 	}
-		
-} 
+	
+function GetFailoverDhcpStats {
+param ([System.Xml.XmlElement]$ModuleConfig)
+			
+Get-DhcpStats 
+			
+}
 
+$MetricPath = $GlobalConfig.MetricPath
+$NodeHostName = $GlobalConfig.NodeHostName
 
+if ($ModuleConfig.HasAttribute("CustomPrefix"))
+{
+	$MetricPath = $ModuleConfig.GetAttribute("CustomPrefix")
+}
+if ($ModuleConfig.HasAttribute("CustomNodeHostName"))
+{
+	$NodeHostName = $ModuleConfig.GetAttribute("CustomNodeHostName")
+}
+
+return [pscustomobject]@{PluginName = "FailoverDhcpStats"; FunctionName="GetFailoverDhcpStats"; GlobalConfig=$GlobalConfig; ModuleConfig=$ModuleConfig; NodeHostName=$NodeHostName; MetricPath=$MetricPath }
 
 
 

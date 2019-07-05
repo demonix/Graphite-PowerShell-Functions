@@ -1,38 +1,30 @@
-New-Module `
--AsCustomObject `
--name PerfCountersModule `
--ScriptBlock { 
+param([Hashtable]$GlobalConfig, [System.Xml.XmlElement]$ModuleConfig)
 
-	function Init 
-	{
-		$plugin = [PSCustomObject]@{
-			PluginName = "PerfCounters"
-			Enabled = $false
-			Config = $null
-			MetricPath = ""
-			NodeHostName = ""
-			ConfigSectionName = "PerfCounters"
-		}
-	
-		$getMetricsBlock = 
-		{
-			if (!($this.Enabled)) {return}
-			$couterSamples = (Get-Counter -Counter $this.Config.Counter.Name -SampleInterval 1 -MaxSamples 1).CounterSamples 
-			if ($couterSamples -ne $null) {
-				$couterSamples | %{ [pscustomobject]@{ Path=$_.Path; Value=$_.Cookedvalue } } 
-			}
-		}
-	
-		$memberParam = @{
-			MemberType = "ScriptMethod"
-			InputObject = $plugin
-			Name = "GetMetrics"
-			Value = $getMetricsBlock
-		}
-		Add-Member @memberParam
-		return $plugin
-	}
-} 
+
+function GetPerfCounters {
+param ([System.Xml.XmlElement]$ModuleConfig)
+			
+$couterSamples = (Get-Counter -Counter $ModuleConfig.Counter.Name -SampleInterval 1 -MaxSamples 1).CounterSamples 
+if ($couterSamples -ne $null) {
+	$couterSamples | %{ [pscustomobject]@{ Path=$_.Path; Value=$_.Cookedvalue } } 
+}
+			
+}
+
+$MetricPath = $GlobalConfig.MetricPath
+$NodeHostName = $GlobalConfig.NodeHostName
+
+if ($ModuleConfig.HasAttribute("CustomPrefix"))
+{
+	$MetricPath = $ModuleConfig.GetAttribute("CustomPrefix")
+}
+if ($ModuleConfig.HasAttribute("CustomNodeHostName"))
+{
+	$NodeHostName = $ModuleConfig.GetAttribute("CustomNodeHostName")
+}
+
+return [pscustomobject]@{PluginName = "PerfCounters"; FunctionName="GetPerfCounters"; GlobalConfig=$GlobalConfig; ModuleConfig=$ModuleConfig; NodeHostName=$NodeHostName; MetricPath=$MetricPath }
+
 
 
 

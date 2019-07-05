@@ -1,3 +1,28 @@
+function Start-StatsToGraphiteWrapper
+{
+
+$rs = [runspacefactory]::CreateRunspacePool()
+$rs.Open()
+for() {
+    $ps = [powershell]::Create()
+    $ps.RunspacePool = $rs
+    $p = $ps.AddScript('
+	class Foo {
+Foo(){}
+[string] Bar() {
+write-Error ''err''
+return ''s''
+}
+}
+$x = [foo]::new()
+1..2500 | %{$x.Bar()}
+').Invoke()
+    $ps.Dispose()
+}
+
+
+}
+
 Function Start-StatsToGraphite
 {
 <#
@@ -54,28 +79,6 @@ Function Start-StatsToGraphite
         [switch]$SqlMetrics = $false
     )
 
-	$configureMuduleScriptBlock = 
-				{
-				param($config, $moduleConfig) 
-				$ConfigSectionName = $this.ConfigSectionName
-							
-								Write-Verbose $ConfigSectionName
-								$this.Config = $moduleConfig
-								Write-Verbose "Config metric path $($config.MetricPath)"
-								Write-Verbose "Config node host name $($config.NodeHostName)"
-								$this.MetricPath = $config.MetricPath
-								$this.NodeHostName = $config.NodeHostName
-								
-								if ($moduleConfig.HasAttribute("CustomPrefix"))
-								{
-									$this.MetricPath = $moduleConfig.GetAttribute("CustomPrefix")
-								}
-								if ($moduleConfig.HasAttribute("CustomNodeHostName"))
-								{
-									$this.NodeHostName = $moduleConfig.GetAttribute("CustomNodeHostName")
-								}
-								$this.Enabled = $true
-				}
 				
     # Run The Load XML Config Function
     $configFileLastWrite = (Get-Item -Path $configPath).LastWriteTime
@@ -85,22 +88,11 @@ Function Start-StatsToGraphite
 	Write-Verbose "ModulesConfigs len $($config.ModulesConfigs.Length)"
 	if ($config.ModulesConfigs.Length -gt 0) {
 		foreach ($moduleConfig in $config.ModulesConfigs.GetEnumerator() ) {
-			if (($moduleConfig.HasAttribute("Enabled")) -and ($moduleConfig.GetAttribute("Enabled").ToLower() -eq 'true')) {
-				$module = @( Get-ChildItem ($PSScriptRoot + "\plugins\$($moduleConfig.Name).ps1") | ForEach-Object { . $_.FullName} )
-				$plugin = $module.Init()
-				
-				
-			
-				$memberParam = @{
-				MemberType = "ScriptMethod"
-				InputObject = $plugin
-				Name = "Configure"
-				Value = $configureMuduleScriptBlock
-				}
-				Add-Member @memberParam
-				$plugin.Configure($Config, $moduleConfig)
+			if (($moduleConfig.GetType().FullName -eq 'System.Xml.XmlElement') -and ($moduleConfig.HasAttribute("Enabled")) -and ($moduleConfig.GetAttribute("Enabled").ToLower() -eq 'true')) {
+				$ppp = $PSScriptRoot + "\plugins\$($moduleConfig.Name).ps1"
+				$plugin = . $ppp   $config $moduleConfig
 				$plugins += $plugin
-			}
+				}
 			
 		}
 	}
@@ -112,7 +104,8 @@ Function Start-StatsToGraphite
 	
 	
     # Start Endless Loop
-    while ($true)
+	$errorsOccured = 0
+    while ($errorsOccured -lt 100)
     {
 	
         # Loop until enough time has passed to run the process again.
@@ -133,14 +126,17 @@ Function Start-StatsToGraphite
 		foreach ($plugin in $plugins)
 		{
 			Write-Verbose "Plugin name: $($plugin.PluginName)"
-			Write-Verbose "Plugin enabled: $($plugin.enabled)"
 			Write-Verbose "Plugin host name: $($plugin.NodeHostName)"
 			Write-Verbose "Plugin host metric path: $($plugin.MetricPath)"
 			
 			
 			$getMetricsStopWatch = [System.Diagnostics.Stopwatch]::StartNew()
-			$samples = $plugin.GetMetrics()
+			#$samples = Invoke-Expression "$($plugin.FunctionName) $($plugin.GlobalConfig) $($plugin.ModuleConfig)"
+			$samples = & $($plugin.FunctionName) $($plugin.ModuleConfig)
 			$getMetricsStopWatch.Stop()
+			$errorsOccured += $error.Count
+			$error | %{ Write-Output $_}
+			$error.Clear()
 			Write-Verbose "Got metrics for $($plugin.PluginName) plugin: $($getMetricsStopWatch.Elapsed.TotalSeconds) seconds."
 				
 			foreach ($sample in $samples)
@@ -197,26 +193,18 @@ Function Start-StatsToGraphite
 			$configFileLastWrite = (Get-Item -Path $configPath).LastWriteTime
 			$Config = Import-XMLConfig -ConfigPath $configPath
 			
-			$plugins = @()
-			if ($config.ModulesConfigs.Length -gt 0) {
-				foreach ($moduleConfig in $config.ModulesConfigs.GetEnumerator() ) {
-					if (($moduleConfig.HasAttribute("Enabled")) -and ($moduleConfig.GetAttribute("Enabled").ToLower() -eq 'true')) {
-						$module = @( Get-ChildItem ($PSScriptRoot + "\plugins\$($moduleConfig.Name).ps1") | ForEach-Object { . $_.FullName} )
-						$plugin = $module.Init()
-					
-						$memberParam = @{
-						MemberType = "ScriptMethod"
-						InputObject = $plugin
-						Name = "Configure"
-						Value = $configureMuduleScriptBlock
-						}
-						Add-Member @memberParam
-						$plugin.Configure($Config, $moduleConfig)
-						$plugins += $plugin
-					}
-					
-				}
-			}
+	     $plugins = @()
+	     Write-Verbose "ModulesConfigs len $($config.ModulesConfigs.Length)"
+	     if ($config.ModulesConfigs.Length -gt 0) {
+	     	foreach ($moduleConfig in $config.ModulesConfigs.GetEnumerator() ) {
+	     		if (($moduleConfig.GetType().FullName -eq 'System.Xml.XmlElement') -and ($moduleConfig.HasAttribute("Enabled")) -and ($moduleConfig.GetAttribute("Enabled").ToLower() -eq 'true')) {
+	     			$ppp = $PSScriptRoot + "\plugins\$($moduleConfig.Name).ps1"
+	     			$plugin = . $ppp   $config $moduleConfig
+	     			$plugins += $plugin
+	     			}
+	     		
+	     	}
+	     }
 				
 			
         }
