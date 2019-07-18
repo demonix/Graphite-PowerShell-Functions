@@ -54,13 +54,12 @@ function GetWsusUpdateStats {
 
     #Param ($wsusServerDnsName = 'vm-wsus', $wsusServerPortNum = 8530)
     $wsusServerDnsName = $ModuleConfig.WsusServer.Name #'vm-wsus'
-    $wsusServerPortNum = $ModuleConfig.WsusServer.Port #8530
+    $wsusServerPortNum = $ModuleConfig.WsusServer.Port #8530    
+    $skipComputerThatNotReportedMonths = $ModuleConfig.skipComputerThatNotReported.Months
 
     $wsus = Get-WsusServer $wsusServerDnsName -PortNumber $wsusServerPortNum
 
-    #$computerscope = New-Object Microsoft.UpdateServices.Administration.ComputerTargetScope
     $updatescope = New-Object Microsoft.UpdateServices.Administration.UpdateScope
-
     ## critical updates
     $criticalUpdatesClassificationId = [guid]'e6cf1350-c01b-414d-a61f-263d14d133b4'
     ## security updates
@@ -76,7 +75,10 @@ function GetWsusUpdateStats {
     $wsus.GetUpdates($updatescope) | % {$updatesCache[$_.id.UpdateId.Guid] = $_.CreationDate}
 
     ## get computers list
-    $computers    = $wsus.GetComputerTargets()
+    $computerscope = New-Object Microsoft.UpdateServices.Administration.ComputerTargetScope
+    $computerscope.FromLastReportedStatusTime = ([datetime]::Now).AddMonths(-$skipComputerThatNotReportedMonths)
+    #$computers = $wsus.GetComputerTargets()
+    $computers = $wsus.GetComputerTargets($computerscope)
 
 
 
