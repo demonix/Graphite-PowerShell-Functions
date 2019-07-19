@@ -57,6 +57,13 @@ function GetWsusUpdateStats {
     $wsusServerPortNum = $ModuleConfig.WsusServer.Port #8530    
     $skipComputerThatNotReportedMonths = $ModuleConfig.skipComputerThatNotReported.Months
 
+    $adDomainNames = $ModuleConfig.AdDomainIntergation.AdDomain.Name | ? { $_ }
+    $adComputers = @{}
+    
+    $adDomainNames | %{ Get-ADComputer -Server $_ -Properties division -filter * | ? dnshostname -ne $null | select DNSHostName, division } | %{
+        $adComputers.Add($_.DNSHostName.Tolower(), $_.division)
+    }
+ 
     $wsus = Get-WsusServer $wsusServerDnsName -PortNumber $wsusServerPortNum
 
     $updatescope = New-Object Microsoft.UpdateServices.Administration.UpdateScope
@@ -114,7 +121,7 @@ function GetWsusUpdateStats {
     
     $lastMonth = ([datetime]::Now).AddMonths(-1)
     $lastTwoMonth = ([datetime]::Now).AddMonths(-2)
-	$lastThreeMonth = ([datetime]::Now).AddMonths(-3)
+    $lastThreeMonth = ([datetime]::Now).AddMonths(-3)
     $lastSixMonth = ([datetime]::Now).AddMonths(-6)
     $lastOneYear = ([datetime]::Now).AddYears(-1)
     $lastTwoYear = ([datetime]::Now).AddYears(-2)
@@ -123,55 +130,91 @@ function GetWsusUpdateStats {
 
     ## aggregate data: compute statistics
     $stats = @{}
-	$stats["last-1-Month"] = 0
-	$stats["from-1-Month-to-2-Month"] = 0
-	$stats["from-2-Month-to-3-Month"] = 0 
-	$stats["from-3-Month-to-6-Month"] = 0 
-	$stats["from-6-Month-to-1-Year"] = 0
-	$stats["from-1-Year-to-2-Year"] = 0
-	$stats["greater-2-Year"] = 0
+    $stats["last-1-Month"] = 0
+    $stats["from-1-Month-to-2-Month"] = 0
+    $stats["from-2-Month-to-3-Month"] = 0 
+    $stats["from-3-Month-to-6-Month"] = 0 
+    $stats["from-6-Month-to-1-Year"] = 0
+    $stats["from-1-Year-to-2-Year"] = 0
+    $stats["greater-2-Year"] = 0
+    $sendPerTeamStats = $adDomainNames.Length -gt 0
+    $perTeamStats = @{}
 
+    if ($sendPerTeamStats) {
 
+        $perTeamStats['UnknownTeam'] = @{}
+        $perTeamStats['UnknownTeam']["last-1-Month"] = 0
+        $perTeamStats['UnknownTeam']["from-1-Month-to-2-Month"] = 0
+        $perTeamStats['UnknownTeam']["from-2-Month-to-3-Month"] = 0 
+        $perTeamStats['UnknownTeam']["from-3-Month-to-6-Month"] = 0 
+        $perTeamStats['UnknownTeam']["from-6-Month-to-1-Year"] = 0
+        $perTeamStats['UnknownTeam']["from-1-Year-to-2-Year"] = 0
+        $perTeamStats['UnknownTeam']["greater-2-Year"] = 0
+
+        $allTeams = $adComputers.Values | ? {$_ -ne $null} | select -Unique  | %{
+            $teamName = $_
+            $perTeamStats[$teamName] = @{}
+            $perTeamStats[$teamName]["last-1-Month"] = 0
+            $perTeamStats[$teamName]["from-1-Month-to-2-Month"] = 0
+            $perTeamStats[$teamName]["from-2-Month-to-3-Month"] = 0 
+            $perTeamStats[$teamName]["from-3-Month-to-6-Month"] = 0 
+            $perTeamStats[$teamName]["from-6-Month-to-1-Year"] = 0
+            $perTeamStats[$teamName]["from-1-Year-to-2-Year"] = 0
+            $perTeamStats[$teamName]["greater-2-Year"] = 0
+        }
+    }
     $result | % {
         $oneComp = $_
         #Write-Warning "Process $oneComp"
-
+        $teamName = "UnknownTeam"
+        if (($adComputers.ContainsKey($oneComp.computerName)) -and ($adComputers[$oneComp.computerName] -ne $null))
+        {
+            $teamName = $adComputers[$oneComp.computerName]
+        }
+        
         ## select appropriate bucket
         switch ($true) {
          
             ($oneComp.latestInstalledUpdate -gt $lastMonth) {
                 #"1-month " + $oneComp.latestInstalledUpdate + " - " + $oneComp.computerName 
                 $stats["last-1-Month"]+=1
+                if ($sendPerTeamStats) { $perTeamStats[$teamName]["last-1-Month"]+=1 }
                 break
             }
             ($oneComp.latestInstalledUpdate -gt $lastTwoMonth) {
                 #"2-month " + $oneComp.latestInstalledUpdate + " - " + $oneComp.computerName 
                 $stats["from-1-Month-to-2-Month"]+=1
+                if ($sendPerTeamStats) { $perTeamStats[$teamName]["from-1-Month-to-2-Month"]+=1 }
                 break
             }
             ($oneComp.latestInstalledUpdate -gt $lastThreeMonth) {
                 #"6-month " + $oneComp.latestInstalledUpdate + " - " + $oneComp.computerName 
                 $stats["from-2-Month-to-3-Month"]+=1
+                if ($sendPerTeamStats) { $perTeamStats[$teamName]["from-2-Month-to-3-Month"]+=1 }
                 break
             }
-			   ($oneComp.latestInstalledUpdate -gt $lastSixMonth) {
+            ($oneComp.latestInstalledUpdate -gt $lastSixMonth) {
                 #"1-week " + $oneComp.latestInstalledUpdate + " - " + $oneComp.computerName 
                 $stats["from-3-Month-to-6-Month"]+=1
+                if ($sendPerTeamStats) { $perTeamStats[$teamName]["from-3-Month-to-6-Month"]+=1 }
                 break
             }
             ($oneComp.latestInstalledUpdate -gt $lastOneYear) {
                 #"1-year " + $oneComp.latestInstalledUpdate + " - " + $oneComp.computerName 
                 $stats["from-6-Month-to-1-Year"]+=1
+                if ($sendPerTeamStats) { $perTeamStats[$teamName]["from-6-Month-to-1-Year"]+=1 }
                 break
             }
             ($oneComp.latestInstalledUpdate -gt $lastTwoYear) {
                 #"1-year " + $oneComp.latestInstalledUpdate + " - " + $oneComp.computerName 
                 $stats["from-1-Year-to-2-Year"]+=1
+                if ($sendPerTeamStats) { $perTeamStats[$teamName]["from-1-Year-to-2-Year"]+=1 }
                 break
             }
             default {
                 #"older 2-year " + $oneComp.latestInstalledUpdate + " - " + $oneComp.computerName 
                 $stats["greater-2-Year"]+=1
+                if ($sendPerTeamStats) { $perTeamStats[$teamName]["greater-2-Year"]+=1 }
             }
         }
 
@@ -180,7 +223,16 @@ function GetWsusUpdateStats {
     ## format output as Graphite Powershel Plugin specification required
     #$env = ($env:USERDNSDOMAIN -split "\.")[0]
     $stats.GetEnumerator() | % {
-        [pscustomobject]@{ Path=$_.Name; Value=$_.Value}
+        $statName = $_.Name
+        [pscustomobject]@{ Path="Aggregated.$statName"; Value=$_.Value}
+    }
+
+    $perTeamStats.GetEnumerator() | % {
+        $teamName = $_.Name
+            $_.Value.GetEnumerator() | % {
+            $statName = $_.Name
+            [pscustomobject]@{ Path="PerTeam.$teamName.$statName"; Value=$_.Value}
+        }
     }
 }
 
@@ -190,11 +242,11 @@ $NodeHostName = $GlobalConfig.NodeHostName
 
 if ($ModuleConfig.HasAttribute("CustomPrefix"))
 {
-	$MetricPath = $ModuleConfig.GetAttribute("CustomPrefix")
+    $MetricPath = $ModuleConfig.GetAttribute("CustomPrefix")
 }
 if ($ModuleConfig.HasAttribute("CustomNodeHostName"))
 {
-	$NodeHostName = $ModuleConfig.GetAttribute("CustomNodeHostName")
+    $NodeHostName = $ModuleConfig.GetAttribute("CustomNodeHostName")
 }
 
 return [pscustomobject]@{PluginName = "WsusUpdatesStats"; FunctionName="GetWsusUpdateStats"; GlobalConfig=$GlobalConfig; ModuleConfig=$ModuleConfig; NodeHostName=$NodeHostName; MetricPath=$MetricPath }
