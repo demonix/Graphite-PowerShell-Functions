@@ -51,15 +51,21 @@ function GetWsusUpdateStats {
     Param (
         [System.Xml.XmlElement]$ModuleConfig
     )
-
+    
+    if (!($ModuleConfig.WsusServer -and $ModuleConfig.WsusServer.Name)) {return @()}
+    if (!($ModuleConfig.WsusServer -and $ModuleConfig.WsusServer.Port)) {return @()}
     #Param ($wsusServerDnsName = 'vm-wsus', $wsusServerPortNum = 8530)
     $wsusServerDnsName = $ModuleConfig.WsusServer.Name #'vm-wsus'
     $wsusServerPortNum = $ModuleConfig.WsusServer.Port #8530    
-    $skipComputerThatNotReportedMonths = $ModuleConfig.skipComputerThatNotReported.Months
-
-    $adDomainNames = $ModuleConfig.AdDomainIntergation.AdDomain.Name | ? { $_ }
+    $skipComputerThatNotReportedMonths = 3
+    if ($ModuleConfig.Item('skipComputerThatNotReported') -and $ModuleConfig.skipComputerThatNotReported.HasAttribute('Months')) {
+        $skipComputerThatNotReportedMonths = $ModuleConfig.skipComputerThatNotReported.Months
+    }
+    $adDomainNames = @()
+    if ($ModuleConfig.Item('AdDomainIntergation') -and $ModuleConfig.AdDomainIntergation.Item('AdDomain')) {
+        $adDomainNames = ($ModuleConfig.AdDomainIntergation.AdDomain | ? { $_.HasAttribute('Name')}) | %{$_.Name}
+    }
     $adComputers = @{}
-    
     $adDomainNames | %{ Get-ADComputer -Server $_ -Properties division -filter * | ? dnshostname -ne $null | select DNSHostName, division } | %{
         $adComputers.Add($_.DNSHostName.Tolower(), $_.division)
     }
