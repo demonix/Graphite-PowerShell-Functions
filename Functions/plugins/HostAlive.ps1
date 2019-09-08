@@ -34,15 +34,20 @@ $hosts = $ModuleConfig.Host.Name
 			$Ping = [System.Net.NetworkInformation.Ping]::new()
 			
 			$hosts | %{
-			
-			   $pingReply = $Ping.Send($_,300)
-			   if ($pingReply.Status -ne 'Success')
-			   {
-			    Start-Sleep -Milliseconds 300
-				$pingReply = $Ping.Send($_,300)
+			   $pingReply = $null
+			   try {
+			      $pingReply = $Ping.Send($_,300)
+			      if ($pingReply.Status -ne 'Success')
+			      {
+			       Start-Sleep -Milliseconds 300
+				   $pingReply = $Ping.Send($_,300)
+			      }
+				  $isAlive = $pingReply.Status -eq 'Success'
 			   }
-			   
-			   $isAlive = $pingReply.Status -eq 'Success'
+			   catch {
+			   Write-Host "ERROR in Ping: $_"
+			   $isAlive = $false
+			   }
 			   [pscustomobject]@{ Path="\\$($_)\IsAlive"; Value=[int]$isAlive }
 			}
 			
