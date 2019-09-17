@@ -1,6 +1,6 @@
 param([Hashtable]$GlobalConfig, [System.Xml.XmlElement]$ModuleConfig)
 
-function Get-ClusterDiskCounterList {
+function Get-ClusterDiskCountersList {
 	param (
         
         $countersToGet
