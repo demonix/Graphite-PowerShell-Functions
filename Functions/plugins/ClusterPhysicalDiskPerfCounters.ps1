@@ -40,7 +40,7 @@ function Get-ClusterDiskCounterList {
 function GetClusterPhysicalDiskPerfCounters {
 param ([System.Xml.XmlElement]$ModuleConfig)
 
-$counterstoGet = Get-ClusterDiskCounters $ModuleConfig.Counter.Name
+$counterstoGet = Get-ClusterDiskCountersList $ModuleConfig.Counter.Name
 						
 			$couterSamples = (Get-Counter -Counter @($counterstoGet.Keys) -SampleInterval 1 -MaxSamples 1).CounterSamples
 			if ($couterSamples -ne $null) {
