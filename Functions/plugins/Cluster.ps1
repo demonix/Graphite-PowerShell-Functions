@@ -8,7 +8,6 @@ $clusterName = (Get-Cluster).name
 			Get-ClusterGroup | select GroupType, OwnerNode, Name, State | ? GroupType -ne 'AvailableStorage' | ? GroupType -ne 'VirtualMachine' | %{ [pscustomobject]@{ Path="\\$($clusterName)\$($env:COMPUTERNAME)\ClusterGroupState\$($_.GroupType)\$($_.Name.Replace('(','').Replace(')',''))"; Value=[int]$_.State } }
 }
 			
-}
 
 $MetricPath = $GlobalConfig.MetricPath
 $NodeHostName = $GlobalConfig.NodeHostName
