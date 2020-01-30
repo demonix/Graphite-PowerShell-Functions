@@ -5,7 +5,14 @@ function GetClusterStatus {
 param ([System.Xml.XmlElement]$ModuleConfig)
 
 $clusterName = (Get-Cluster).name
-			Get-ClusterGroup | select GroupType, OwnerNode, Name, State | ? GroupType -ne 'AvailableStorage' | ? GroupType -ne 'VirtualMachine' | %{ [pscustomobject]@{ Path="\\$($clusterName)\$($env:COMPUTERNAME)\ClusterGroupState\$($_.GroupType)\$($_.Name.Replace('(','').Replace(')',''))"; Value=[int]$_.State } }
+			Get-ClusterGroup | select GroupType, OwnerNode, Name, State | ? GroupType -ne 'AvailableStorage' | ? GroupType -ne 'VirtualMachine' | %{ 
+			
+			[pscustomobject]@{ Path="\\$($clusterName)\$($env:COMPUTERNAME)\ClusterGroupState\$($_.GroupType)\$($_.Name.Replace('(','').Replace(')',''))"; Value=[int]$_.State } }
+	
+
+			Get-ClusterNetworkInterface -Node $env:COMPUTERNAME  | %{ 
+			[pscustomobject]@{ Path="\\$($clusterName)\$($env:COMPUTERNAME)\ClusterNetInterfaceState\$($_.Name.Replace($env:COMPUTERNAME.toLower() + ' - ','').Replace('(','').Replace(')',''))"; Value=[int]$_.State } }
+
 }
 			
 
