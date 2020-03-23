@@ -12,6 +12,9 @@ $clusterName = (Get-Cluster).name
 
 			Get-ClusterNetworkInterface -Node $env:COMPUTERNAME  | %{ 
 			[pscustomobject]@{ Path="\\$($clusterName)\$($env:COMPUTERNAME)\ClusterNetInterfaceState\$($_.Name.Replace($env:COMPUTERNAME.toLower() + ' - ','').Replace('(','').Replace(')',''))"; Value=[int]$_.State } }
+			
+			$downNodesCount = (Get-ClusterNode | ? State -ne 'Up' | measure).Count
+			[pscustomobject]@{ Path="\\$($clusterName)\$($env:COMPUTERNAME)\ClusterNodesDown"; Value=$downNodesCount } }
 
 }
 			
