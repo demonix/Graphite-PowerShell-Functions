@@ -6,7 +6,7 @@ Param(
 
 function GetBackupAge {
     Param ([System.Xml.XmlElement]$ModuleConfig)
-
+    $lastBackupAgeHours = $null
     if (Get-Command 'Get-WBBackupSet' -ea SilentlyContinue) {
         if ($latestBackup = Get-WBBackupSet | sort BackupTime -Descending | select -First 1) {
             $lastBackupAgeHours = ([datetime]::now - $latestBackup.BackupTime).TotalHours
