@@ -1,9 +1,16 @@
 ﻿param([Hashtable]$GlobalConfig, [System.Xml.XmlElement]$ModuleConfig)
 
-function GetHostAliveAsync {
-    param ([System.Xml.XmlElement]$ModuleConfig)
+$allhosts = $ModuleConfig.Host.Name.ToLower();
 
-    $hosts = $ModuleConfig.Host.Name.ToLower();
+function GetHostAliveAsync {
+
+    $HostObjects=GetPingHostAsync -allhosts $allhosts
+    GetMetricHostIsAlive -HostObjects $HostObjects
+    }
+
+
+function GetPingHostAsync {
+    param ([System.Xml.XmlElement]$ModuleConfig)
 	$timeout = 300
 	
     #Запускается асинхронный пинг до хостов		
@@ -15,7 +22,7 @@ function GetHostAliveAsync {
 
 	#Если пинг не отменен по таймауту и завершился успешно, то возвращется значение метрик IsAlive=1		
 	$tasks | ? { ($_.Task.IsCanceled -eq $false) -and ($_.Task.Result.Status -eq 'Success')}  | %{
-            GetHostMetricIsAlive -host $_.Host -NodeHostName $NodeHostName -Value 1
+           [pscustomobject]@{ Host=$_.Host; Value=1 }
     }
 
 	#Запускается повтороный пинг для всех не успешных хостов 		
@@ -27,32 +34,28 @@ function GetHostAliveAsync {
 
     #Проверяется результат повторного пинга и возвращаются соответствующее значения метрик IsAlive
 	$secondTasks | ? {($_.Task.IsCanceled -eq $false) -and ($_.Task.Result.Status -eq 'Success')} | %{
-        GetHostMetricIsAlive -host $_.Host -NodeHostName $NodeHostName -Value 1
+        [pscustomobject]@{ Host=$_.Host; Value=1 }
     }
 	$secondTasks | ? {($_.Task.IsCanceled) -or ($_.Task.Result.Status -ne 'Success')}  | %{
-        GetHostMetricIsAlive -host $_.Host -NodeHostName $NodeHostName -Value 0
+        [pscustomobject]@{ Host=$_.Host; Value=0 }
     }			
 }
 
 
-function GetHostMetricIsAlive {
-    param (
-        $host,
-        $NodeHostName,
-        $Value
-    )  
-         
-    [pscustomobject]@{ 
-        Path="\\$host\IsAlive";
-        Value=$Value
-    }
+function GetMetricHostIsAlive {
+    param ( $HostObjects )  
+    $HostObjects | ForEach-Object {         
+    $HostMetric=$_.Host
+    $ValueMetric=$_.Value
+    [pscustomobject]@{Path="\\$HostMetric\IsAlive";Value="$ValueMetric"}
 
-    [pscustomobject]@{
-        Path="\\$host\$NodeHostName\IsAlive";
-        Value=$Value
+    [pscustomobject]@{Path="\\$HostMetric\$NodeHostName\IsAlive";Value="$ValueMetric"}
     }
 
    }
+
+
+
 
 function GetHostAlive {
 param ([System.Xml.XmlElement]$ModuleConfig)
