@@ -2,6 +2,7 @@
 
 
 function GetHostAliveAsync {
+    param ([System.Xml.XmlElement]$ModuleConfig)
     $hosts = $ModuleConfig.Host.Name.ToLower();
     $HostObjects=GetPingResultAsync -hosts $hosts
     GetMetricHostIsAlive -HostObjects $HostObjects
@@ -9,7 +10,7 @@ function GetHostAliveAsync {
 
 
 function GetPingResultAsync {
-    param ([System.Xml.XmlElement]$ModuleConfig)
+    param ($hosts)
 	$timeout = 300
 	
     #Запускается асинхронный пинг до хостов		
