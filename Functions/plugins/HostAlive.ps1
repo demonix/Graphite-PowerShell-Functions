@@ -1,9 +1,8 @@
 ﻿param([Hashtable]$GlobalConfig, [System.Xml.XmlElement]$ModuleConfig)
 
-$allhosts = $ModuleConfig.Host.Name.ToLower();
 
 function GetHostAliveAsync {
-
+    $allhosts = $ModuleConfig.Host.Name.ToLower();
     $HostObjects=GetPingHostAsync -allhosts $allhosts
     GetMetricHostIsAlive -HostObjects $HostObjects
     }
@@ -14,7 +13,7 @@ function GetPingHostAsync {
 	$timeout = 300
 	
     #Запускается асинхронный пинг до хостов		
-	$tasks = $hosts | %{
+	$tasks = $allhosts | %{
         $task = [System.Net.NetworkInformation.Ping]::new().SendPingAsync($_,$timeout)
 		[pscustomobject]@{ Host=$_; Task=$task }
 	}
