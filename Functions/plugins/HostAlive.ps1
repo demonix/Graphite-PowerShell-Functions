@@ -4,8 +4,8 @@
 function GetHostAliveAsync {
     param ([System.Xml.XmlElement]$ModuleConfig)
     $hosts = $ModuleConfig.Host.Name.ToLower();
-    $HostObjects=GetPingResultAsync -hosts $hosts
-    GetMetricHostIsAlive -HostObjects $HostObjects
+    $pingResults=GetPingResultAsync -hosts $hosts
+    GetMetricHostIsAlive -pingResults $pingResults
     }
 
 
@@ -43,8 +43,8 @@ function GetPingResultAsync {
 
 
 function GetMetricHostIsAlive {
-    param ( $HostObjects )  
-    $HostObjects | ForEach-Object {         
+    param ( $pingResults )  
+    $pingResults | ForEach-Object {         
     $HostMetric=$_.Host
     $ValueMetric=$_.Value
     [pscustomobject]@{Path="\\$HostMetric\IsAlive";Value="$ValueMetric"}
