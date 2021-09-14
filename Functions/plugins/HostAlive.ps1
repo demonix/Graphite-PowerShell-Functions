@@ -74,7 +74,6 @@ function GetMetricHostIsAlive {
    }
 
 
-
 function GetHostAlive {
 param ([System.Xml.XmlElement]$ModuleConfig)
 
