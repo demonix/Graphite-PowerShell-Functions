@@ -8,7 +8,6 @@ function GetHostAliveAsync {
     GetMetricHostIsAlive -pingResults $pingResults
     }
 
-
 function GetPingResultAsync {
     param ($hosts)
 	$timeout = 300
