@@ -18,7 +18,6 @@ function GetPingResultAsync {
         $task = [System.Net.NetworkInformation.Ping]::new().SendPingAsync($_,$timeout)
 		[pscustomobject]@{ Host=$_; Task=$task }
 	}
-	#Start-Sleep -Milliseconds ($timeout*2)
     
     #Ожидание завершения SendPingAsync и игнорирование ошибки резолвинга хоста
     Try {
@@ -46,7 +45,6 @@ function GetPingResultAsync {
 			$secondTask = [System.Net.NetworkInformation.Ping]::new().SendPingAsync($_.Host,$timeout)
 		[pscustomobject]@{ Host=$_.Host; Task=$secondTask }
 	}
-	#Start-Sleep -Milliseconds ($timeout*2)
     Try {
         [System.Threading.Tasks.Task]::WaitAll($tasks.task)
     } 
@@ -75,7 +73,6 @@ function GetMetricHostIsAlive {
     }
 
    }
-
 
 
 
