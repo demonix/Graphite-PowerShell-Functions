@@ -68,7 +68,7 @@ function GetMetricHostIsAlive {
     $ValueMetric=$_.Value
     [pscustomobject]@{Path="\\$HostMetric\IsAlive";Value="$ValueMetric"}
 
-    [pscustomobject]@{Path="\\$HostMetric\$NodeHostName\IsAlive";Value="$ValueMetric"}
+    [pscustomobject]@{Path="\\$HostMetric\$($env:COMPUTERNAME)\IsAlive".ToLower();Value="$ValueMetric"}
     }
 
    }
@@ -102,7 +102,7 @@ $hosts = $ModuleConfig.Host.Name
 }
 
 $MetricPath = $GlobalConfig.MetricPath
-$NodeHostName = $GlobalConfig.NodeHostName.ToLower();
+$NodeHostName = $GlobalConfig.NodeHostName
 
 if ($ModuleConfig.HasAttribute("CustomPrefix"))
 {

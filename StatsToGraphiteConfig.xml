@@ -10,7 +10,7 @@
   </Graphite>
   <ModulesConfigs>
     <HostAlive Enabled="true" CustomPrefix="SPS.virtualization.hosts.dev">
-      <Host Name="yandex.ru" />
+      <Host Name="ya.ru" />
 	  <Host Name="11.0.0.1" />
 	  <Host Name="bst-hv6-51" />
     </HostAlive>
