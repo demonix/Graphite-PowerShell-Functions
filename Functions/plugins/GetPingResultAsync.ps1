@@ -8,12 +8,17 @@
 		[pscustomobject]@{ Host=$_; Task=$task }
 	}
     
+
     #Ожидание завершения SendPingAsync и игнорирование ошибки резолвинга хоста
     Try {
         [System.Threading.Tasks.Task]::WaitAll($tasks.task)
     } 
     catch {
-         Write-Warning ($_.exception.InnerException.InnerExceptions |%{$_.Message+" "+$_.InnerException.Message})
+        if ($_.exception.InnerException) {
+                 $_.exception.InnerException.InnerExceptions |%{$_.Message+" "+$_.InnerException.Message} | Write-Warning
+                    } else {
+                         $_.exception.message | Write-Warning
+                }
         }
 
     #Если хост не резолвится, то возвращается значение метрики IsAlive=0
@@ -34,11 +39,18 @@
 			$secondTask = [System.Net.NetworkInformation.Ping]::new().SendPingAsync($_.Host,$timeout)
 		[pscustomobject]@{ Host=$_.Host; Task=$secondTask }
 	}
+
+
+    #Ожидание завершения повторного SendPingAsync и игнорирование ошибки резолвинга хоста
     Try {
-        [System.Threading.Tasks.Task]::WaitAll($tasks.task)
-    } 
+        [System.Threading.Tasks.Task]::WaitAll($secondTasks.task)
+      } 
     catch {
-         Write-Warning ($_.exception.InnerException.InnerExceptions |%{$_.Message+" "+$_.InnerException.Message})
+           if ($_.exception.InnerException) {
+               $_.exception.InnerException.InnerExceptions |%{$_.Message+" "+$_.InnerException.Message} | Write-Warning
+                    } else {
+                         $_.exception.message | Write-Warning
+                }
         }
 
     #Проверяется результат повторного пинга и возвращаются соответствующее значения метрик IsAlive
