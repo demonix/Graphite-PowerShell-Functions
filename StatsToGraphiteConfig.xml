@@ -9,15 +9,10 @@
     <SendUsingUDP>true</SendUsingUDP>
   </Graphite>
   <ModulesConfigs>
-    <HostAlive Enabled="true" CustomPrefix="SPS.virtualization.hosts.dev">
-      <Host Name="ya.ru" />
-	  <Host Name="11.0.0.1" />
-	  <Host Name="bst-hv6-51" />
-    </HostAlive>
-    <HostAlive Enabled="true" CustomPrefix="SPS.virtualization.hosts.sys-msk">
-      <Host Name="8.8.8.8" />
-
-    </HostAlive>
+    <HostAliveFromUrl Enabled="true" CustomPrefix="SPS.virtualization.hosts.dev" Vmmenv="dev-vmm">
+	</HostAliveFromUrl>
+	<HostAliveFromUrl Enabled="true" CustomPrefix="SPS.virtualization.hosts.sys-msk" Vmmenv="vmm">
+	</HostAliveFromUrl>
     <PerfCounters Enabled="false" CustomPrefix="KE.system.Sps">
       <Counter Name="\PhysicalDisk(*)\% Disk Read Time" />
       <Counter Name="\PhysicalDisk(*)\% Disk Time" />
