@@ -9,9 +9,9 @@
     <SendUsingUDP>true</SendUsingUDP>
   </Graphite>
   <ModulesConfigs>
-    <HostAliveFromUrl Enabled="true" CustomPrefix="SPS.virtualization.hosts.dev" Vmmenv="dev-vmm">
+    <HostAliveFromUrl Enabled="true" CustomPrefix="SPS.virtualization.hosts.dev" Url="https://stat.kontur.ru/vmminfo/api/v1/vmhost?env=dev-vmm" apikey="xxx">
 	</HostAliveFromUrl>
-	<HostAliveFromUrl Enabled="true" CustomPrefix="SPS.virtualization.hosts.sys-msk" Vmmenv="vmm">
+	<HostAliveFromUrl Enabled="true" CustomPrefix="SPS.virtualization.hosts.sys-msk" Url="https://stat.kontur.ru/vmminfo/api/v1/vmhost?env=vmm" apikey="xxx">
 	</HostAliveFromUrl>
     <PerfCounters Enabled="false" CustomPrefix="KE.system.Sps">
       <Counter Name="\PhysicalDisk(*)\% Disk Read Time" />
