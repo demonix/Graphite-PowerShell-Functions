@@ -14,7 +14,7 @@
         [System.Threading.Tasks.Task]::WaitAll($tasks.task)
     } 
     catch {
-        if ($_.exception.InnerException) {
+        if ($_.exception.InnerException -is [System.AggregateException]) {
                  $_.exception.InnerException.InnerExceptions |%{$_.Message+" "+$_.InnerException.Message} | Write-Warning
                     } else {
                          $_.exception.message | Write-Warning
@@ -46,7 +46,8 @@
         [System.Threading.Tasks.Task]::WaitAll($secondTasks.task)
       } 
     catch {
-           if ($_.exception.InnerException) {
+           # $_.exception.InnerException.InnerExceptions |%{$_.Message+" "+$_.InnerException.Message} | Write-Warning
+           if ($_.exception.InnerException -is [System.AggregateException]) {
                $_.exception.InnerException.InnerExceptions |%{$_.Message+" "+$_.InnerException.Message} | Write-Warning
                     } else {
                          $_.exception.message | Write-Warning
