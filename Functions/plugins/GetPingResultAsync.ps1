@@ -1,7 +1,10 @@
 ﻿function GetPingResultAsync {
     param ($hosts)
 	$timeout = 300
-	
+
+    	if ($hosts -eq $null){
+        $hosts = @() } 
+        
     #Запускается асинхронный пинг до хостов		
 	$tasks = $hosts | %{
         $task = [System.Net.NetworkInformation.Ping]::new().SendPingAsync($_,$timeout)
@@ -15,9 +18,9 @@
     } 
     catch {
         if ($_.exception.InnerException -is [System.AggregateException]) {
-                 $_.exception.InnerException.InnerExceptions |%{$_.Message+" "+$_.InnerException.Message} | Write-Warning
+                 $_.exception.InnerException.InnerExceptions |%{"Хост не резолвится:" +$_.Message+" "+$_.InnerException.Message} | Write-Warning
                     } else {
-                         $_.exception.message | Write-Warning
+                        "Хост не резолвится:" + $_.exception.message | Write-Warning 
                 }
         }
 
@@ -48,9 +51,9 @@
     catch {
            # $_.exception.InnerException.InnerExceptions |%{$_.Message+" "+$_.InnerException.Message} | Write-Warning
            if ($_.exception.InnerException -is [System.AggregateException]) {
-               $_.exception.InnerException.InnerExceptions |%{$_.Message+" "+$_.InnerException.Message} | Write-Warning
+               $_.exception.InnerException.InnerExceptions |%{"Повторный пинг.Хост не резолвится:" +$_.Message+" "+$_.InnerException.Message} | Write-Warning
                     } else {
-                         $_.exception.message | Write-Warning
+                        "Повторный пинг.Хост не резолвится:" + $_.exception.message | Write-Warning
                 }
         }
 
