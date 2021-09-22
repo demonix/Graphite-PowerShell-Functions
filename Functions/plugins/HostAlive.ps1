@@ -9,19 +9,9 @@ function GetHostAliveAsync {
     }
 
 
-function GetMetricHostIsAlive {
-    param ( $pingResults )  
-    $pingResults | ForEach-Object {         
-    $HostMetric=$_.Host
-    $ValueMetric=$_.Value
-    [pscustomobject]@{Path="\\$HostMetric\IsAlive";Value="$ValueMetric"}
-
-    [pscustomobject]@{Path="\\$HostMetric\$($env:COMPUTERNAME)\IsAlive".ToLower();Value="$ValueMetric"}
-    }
-
-   }
-
 . $PSScriptRoot\GetPingResultAsync.ps1
+
+. $PSScriptRoot\GetMetricHostIsAlive.ps1
 
 $MetricPath = $GlobalConfig.MetricPath
 $NodeHostName = $GlobalConfig.NodeHostName
