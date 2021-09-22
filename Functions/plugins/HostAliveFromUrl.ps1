@@ -11,7 +11,7 @@ function GetHostAliveAsyncFromUrl {
     $PluginConfig.Hosts=$hosts
 
        } catch {
-                Write-Warning "Url: $_."
+                Write-Warning "Ошибка получения списка хостов по $($PluginConfig.ModuleConfig.Url) : $_."
                 $hosts=$PluginConfig.Hosts
             }
 

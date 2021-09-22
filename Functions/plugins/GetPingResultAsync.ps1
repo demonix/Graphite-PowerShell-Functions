@@ -18,9 +18,9 @@
     } 
     catch {
         if ($_.exception.InnerException -is [System.AggregateException]) {
-                 $_.exception.InnerException.InnerExceptions |%{"Хост не резолвится:" +$_.Message+" "+$_.InnerException.Message} | Write-Warning
+                 $_.exception.InnerException.InnerExceptions |%{"Ошибка при выполнении SendPingAsync:" +$_.Message+" "+$_.InnerException.Message} | Write-Warning
                     } else {
-                        "Хост не резолвится:" + $_.exception.message | Write-Warning 
+                        "Ошибка при выполнении SendPingAsync:" + $_.exception.message | Write-Warning 
                 }
         }
 
@@ -51,9 +51,9 @@
     catch {
            # $_.exception.InnerException.InnerExceptions |%{$_.Message+" "+$_.InnerException.Message} | Write-Warning
            if ($_.exception.InnerException -is [System.AggregateException]) {
-               $_.exception.InnerException.InnerExceptions |%{"Повторный пинг.Хост не резолвится:" +$_.Message+" "+$_.InnerException.Message} | Write-Warning
+               $_.exception.InnerException.InnerExceptions |%{"Ошибка при повтороном выполнении SendPingAsync:" +$_.Message+" "+$_.InnerException.Message} | Write-Warning
                     } else {
-                        "Повторный пинг.Хост не резолвится:" + $_.exception.message | Write-Warning
+                        "Ошибка при повтороном выполнении SendPingAsync:" + $_.exception.message | Write-Warning
                 }
         }
 
