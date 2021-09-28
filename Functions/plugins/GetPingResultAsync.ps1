@@ -41,22 +41,21 @@
 	$secondTasks = $tasks | ? { ($_.Task.IsCanceled) -or ($_.Task.Result.Status -ne 'Success')} | %{
 			$secondTask = [System.Net.NetworkInformation.Ping]::new().SendPingAsync($_.Host,$timeout)
 		[pscustomobject]@{ Host=$_.Host; Task=$secondTask }
-	}
-
+     }   
+        if ($secondTasks -ne $null){
 
     #Ожидание завершения повторного SendPingAsync и игнорирование ошибки резолвинга хоста
     Try {
         [System.Threading.Tasks.Task]::WaitAll($secondTasks.task)
       } 
     catch {
-           # $_.exception.InnerException.InnerExceptions |%{$_.Message+" "+$_.InnerException.Message} | Write-Warning
            if ($_.exception.InnerException -is [System.AggregateException]) {
                $_.exception.InnerException.InnerExceptions |%{"Ошибка при повтороном выполнении SendPingAsync:" +$_.Message+" "+$_.InnerException.Message} | Write-Warning
                     } else {
                         "Ошибка при повтороном выполнении SendPingAsync:" + $_.exception.message | Write-Warning
                 }
         }
-
+     }
     #Проверяется результат повторного пинга и возвращаются соответствующее значения метрик IsAlive
 	$secondTasks | ? {($_.Task.IsCanceled -eq $false) -and ($_.Task.Result.Status -eq 'Success')} | %{
         [pscustomobject]@{ Host=$_.Host; Value=1 }
