@@ -40,10 +40,11 @@
 	$secondTasks = $tasks | ? { ($_.Task.IsCanceled) -or ($_.Task.Result.Status -ne 'Success')} | %{
 			$secondTask = [System.Net.NetworkInformation.Ping]::new().SendPingAsync($_.Host,$timeout)
 		[pscustomobject]@{ Host=$_.Host; Task=$secondTask }
+
      }   
         if ($secondTasks -ne $null){
 
-    #Ожидание завершения повторного SendPingAsync и игнорирование ошибки резолвинга хоста
+#Ожидание завершения повторного SendPingAsync и игнорирование ошибки резолвинга хоста
     Try {
         [System.Threading.Tasks.Task]::WaitAll($secondTasks.task)
       } 
