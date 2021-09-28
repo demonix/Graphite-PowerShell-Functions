@@ -10,7 +10,6 @@
         $task = [System.Net.NetworkInformation.Ping]::new().SendPingAsync($_,$timeout)
 		[pscustomobject]@{ Host=$_; Task=$task }
 	}
-    
 
     #Ожидание завершения SendPingAsync и игнорирование ошибки резолвинга хоста
     Try {
