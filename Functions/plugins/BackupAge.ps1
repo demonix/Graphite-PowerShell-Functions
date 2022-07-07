@@ -8,12 +8,18 @@ function GetBackupAge {
     Param ([System.Xml.XmlElement]$ModuleConfig)
     $lastBackupAgeHours = $null
     if (Get-Command 'Get-WBBackupSet' -ea SilentlyContinue) {
-        if ($latestBackup = Get-WBBackupSet | sort BackupTime -Descending | select -First 1) {
-            $lastBackupAgeHours = ([datetime]::now - $latestBackup.BackupTime).TotalHours
+        #if ($latestBackup = Get-WBBackupSet | sort BackupTime -Descending | select -First 1) {
+        #    $lastBackupAgeHours = ([datetime]::now - $latestBackup.BackupTime).TotalHours
+        #}
+        if ($bs = Get-WBSummary) {
+            $bs = Get-WBSummary
+            $fromSuccessfulToNextTimespan = ($bs.NextBackupTime - $bs.LastSuccessfulBackupTime)
+            $fromLastToNextTimespan = ($bs.NextBackupTime - $bs.LastBackupTime)
+            $lastBackupAgeHours = ($fromSuccessfulToNextTimespan - $fromLastToNextTimespan).TotalHours
         }
     }
 
-    if ($lastBackupAgeHours) {
+    if ($lastBackupAgeHours -ne $null) {
         [pscustomobject]@{ 
             Path  ="\\$($env:COMPUTERNAME)\BackupAgeHours".ToLower(); 
             Value =  [math]::Round($lastBackupAgeHours,2)
