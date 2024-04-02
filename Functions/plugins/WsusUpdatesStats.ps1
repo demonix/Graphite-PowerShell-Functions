@@ -70,7 +70,7 @@ function GetWsusUpdateStats {
         $adComputers.Add($_.DNSHostName.Tolower(), $_.division)
     }
  
-    $wsus = Get-WsusServer $wsusServerDnsName -PortNumber $wsusServerPortNum
+    $wsus = Get-WsusServer $wsusServerDnsName -PortNumber $wsusServerPortNum -usessl
 
     $updatescope = New-Object Microsoft.UpdateServices.Administration.UpdateScope
     ## critical updates
